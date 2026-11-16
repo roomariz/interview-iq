@@ -155,6 +155,16 @@ PRD → Architecture → Features → Mockups
 | 2026-04-26 | Validation | Removed nested `validation_warning.trust` - single trust object at root level only | Eliminates inconsistency risk and maintenance overhead |
 | 2026-04-26 | Interpretation | Off-topic interpretation: "This answer is not relevant to the question, so detailed evaluation is not applicable." | Accurate signal - not partial evidence |
 | 2026-04-26 | Off-topic path | Skip low-confidence adjustments for `failure_type=off_topic` in `apply_decision_adjustments` | Preserve correct off-topic signals |
+| 2026-11-16 | architecture | Phase 1 only: health API and Ollama integration; no deployment, frontend API wiring, database or session migration | User-defined scope |
+| 2026-11-16 | architecture | User selected direct xAI API for Grok; preserve Ollama/OpenRouter configurations and do not deploy | Explicit provider preference |
+| 2026-11-16 | architecture | User switched to direct Google Gemini with a free-tier eligible model; retain other providers and no automatic paid fallback | Explicit provider preference |
+| 2026-11-16 | architecture | Question requests must agree on exact count and schema; never return invalid fallback output or access Streamlit state from workers | User-defined validation constraints |
+
+| 2026-11-16 | architecture | Assess relevance against the actual question substance; hypothetical technical answers need no STAR or historical metrics; preserve providers/frontend, no deployment | User relevance-fix constraints |
+
+| 2026-11-16 | architecture | Ground feedback in current inputs, reconcile confidence aliases, withhold uncertain memory; retain screens/providers and stop after local tests | User evaluation reliability task |
+
+| 2026-11-16 | architecture | Keep score-based performance verdict separate from evaluator uncertainty; trace risk reasons, preserve supported coaching and use concise decision probes | User confidence and feedback correction |
 
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`

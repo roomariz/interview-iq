@@ -1,3 +1,4 @@
+from interview_app_backend.services.feedback_integrity import example_text, memory_is_allowed
 from collections.abc import Mapping
 from typing import Any
 
@@ -13,70 +14,13 @@ FEEDBACK_DIMENSIONS = (
 )
 
 DEFAULT_FEEDBACK = {
-    "question": "Describe a time you improved system performance under constraints.",
-    "answer": (
-        "In my previous role at TechCorp, I led optimisation of our API layer. "
-        "We reduced latency from 2s to 200ms by profiling hot paths, caching repeated work, "
-        "and simplifying a slow database query."
-    ),
-    "overall_decision": "pass",
-    "scores": {
-        "relevance": 7,
-        "structure": 4,
-        "specificity": 4,
-        "communication": 7,
-        "problem_solving_approach": 5,
-    },
-        "labels": {
-        "relevance": "Addresses the question directly",
-        "structure": "Clear sections are present, but STAR alignment could be stronger",
-        "specificity": "Metrics are present, but could be tied more clearly to business or user impact",
-        "communication": "Clear and easy to follow",
-        "problem_solving_approach": "The answer gives strong technical actions, but does not clearly explain why each choice was made",
-    },
-    "key_issues": [
-        "The answer gives strong metrics, but does not clearly explain the decision-making behind each technical choice.",
-        "Trade-offs are only implied, especially around caching, denormalisation, and asynchronous messaging.",
-        "Alternative approaches were not discussed, such as vertical scaling, query redesign only, or queue-based processing without caching.",
-    ],
-    "improvements": [
-        "Keep the existing metrics, but briefly connect them to user or business impact.",
-        "Explain why each optimisation was selected under the budget constraint.",
-        "Mention at least one rejected alternative and why it was not suitable.",
-        "Add one sentence on trade-offs, such as cache invalidation, data consistency, or operational complexity.",
-    ],
-    "reasoning_feedback": {
-        "clarity": "Solution is valid but the reasoning behind choosing it is not clearly explained",
-        "alternative_approaches": "Did not mention considered alternatives",
-        "trade_off_awareness": "Trade-offs were mentioned but not thoroughly articulated",
-    },
-    "reasoning": {
-        "clarity": "Solution is valid but the reasoning behind choosing it is not clearly explained",
-        "alternative_approaches": "Did not mention considered alternatives",
-        "trade_off_awareness": "Trade-offs were mentioned but not thoroughly articulated",
-        "evidence": "Explicit evidence is limited or not clearly highlighted",
-    },
-    "follow_up": {
-        "question": "",
-        "type": "",
-        "target_dimension": "problem_solving_approach",
-    },
-        "strengths": [
-        "Provides a clear example, but not relevant to the question",
-        "Clear communication and easy to follow",
-    ],
-    "criteria": [
-        "Problem-solving clarity and approach",
-        "Ownership and impact",
-        "Communication and structure (STAR)",
-        "Technical depth and trade-offs",
-    ],
-    "example_answer": (
-        "At TechCorp, I led a three-month optimisation project for our API layer. "
-        "After profiling the service, I identified one slow database call and two repeated computations. "
-        "I introduced caching, simplified the query, and measured the result at a 90% latency reduction. "
-        "I also compared the approach with a broader rewrite and chose the smaller change because it reduced risk."
-    ),
+    "question": "", "answer": "", "overall_decision": "fail",
+    "scores": dict.fromkeys((key for key, _ in FEEDBACK_DIMENSIONS), 0),
+    "labels": dict.fromkeys((key for key, _ in FEEDBACK_DIMENSIONS), ""),
+    "key_issues": [], "improvements": [], "strengths": [], "criteria": [],
+    "reasoning": dict.fromkeys(("clarity", "alternative_approaches", "trade_off_awareness", "evidence"), ""),
+    "follow_up": {"question": "", "type": "", "target_dimension": ""},
+    "example_answer": "",
 }
 
 
@@ -132,7 +76,7 @@ def _is_blank(value: Any) -> bool:
 def _merge_list(source: Any, fallback: list[str]) -> list[str]:
     if isinstance(source, list):
         values = [str(item).strip() for item in source if str(item).strip()]
-        return values or fallback
+        return values
     if isinstance(source, str) and source.strip():
         return [source.strip()]
     return fallback
@@ -172,7 +116,7 @@ def normalise_feedback_payload(raw: Any) -> dict[str, Any]:
     follow_up = _coerce_mapping(source.get("follow_up"))
     decision_detail = _coerce_mapping(source.get("overall_decision_detail"))
     validation_warning = _coerce_mapping(source.get("validation_warning"))
-    trust_source = _coerce_mapping(validation_warning.get("trust")) or decision_detail
+    trust_source = _coerce_mapping(source.get("trust")) or _coerce_mapping(validation_warning.get("trust")) or decision_detail
 
     scores = _coerce_mapping(source.get("scores"))
     labels = _coerce_mapping(source.get("labels"))
@@ -190,7 +134,7 @@ def normalise_feedback_payload(raw: Any) -> dict[str, Any]:
     if overall_decision not in {"pass", "borderline pass", "fail"}:
         overall_decision = _derive_overall_decision(scores)
 
-    feedback_summary = str(feedback_source.get("summary", source.get("overall_summary", ""))).strip()
+    feedback_summary = str(feedback_source.get("summary", source.get("summary", source.get("overall_summary", "")))).strip()
     if not feedback_summary:
         feedback_summary = DEFAULT_FEEDBACK["reasoning"]["clarity"]
     trust = {
@@ -212,6 +156,7 @@ def normalise_feedback_payload(raw: Any) -> dict[str, Any]:
     return {
         "question": str(source.get("question", DEFAULT_FEEDBACK["question"])).strip(),
         "answer": str(source.get("answer", DEFAULT_FEEDBACK["answer"])).strip(),
+        "assessment_status": source.get("assessment_status", "provisional"),
         "overall_decision": overall_decision,
         "scores": {
             key: _clamp_score(source.get(key, scores.get(key, DEFAULT_FEEDBACK["scores"][key])))
@@ -235,15 +180,17 @@ def normalise_feedback_payload(raw: Any) -> dict[str, Any]:
         "follow_up": {
             "question": str(follow_up.get("question", DEFAULT_FEEDBACK["follow_up"]["question"])).strip(),
             "type": str(follow_up.get("type", DEFAULT_FEEDBACK["follow_up"]["type"])).strip(),
-            "target_dimension": str(follow_up.get("target_dimension", DEFAULT_FEEDBACK["follow_up"]["target_dimension"])).strip(),
+            "target_dimension": str(follow_up.get("target_dimension", "")).strip(),
+            **{key: follow_up[key] for key in ("reasoning_action", "context_note", "stage") if key in follow_up},
         },
         "topic_match": bool(source.get("topic_match", evaluation_source.get("topic_match", True))),
         "relevance_gate_applied": bool(source.get("relevance_gate_applied", evaluation_source.get("relevance_gate_applied", False))),
         "failure_type": failure_type,
-        "memory_storage_allowed": bool(source.get("memory_storage_allowed", evaluation_source.get("memory_storage_allowed", True))),
+        "memory_storage_allowed": memory_is_allowed(source),
+        "feedback_validation": source.get("feedback_validation", {}),
         "future_session_memory": list(source.get("future_session_memory", [])) if isinstance(source.get("future_session_memory"), list) else [],
         "overall_decision_detail": {key: (str(value).strip() if isinstance(value, str) else _coerce_float(value) if key == "score_confidence" else bool(value) if key == "gating_applied" else value) for key, value in decision_detail.items()},
         "validation_warning": {key: (str(value).strip() if isinstance(value, str) else _coerce_float(value) if key == "score_confidence" else bool(value) if key == "has_warning" else value) for key, value in validation_warning.items()},
         "trust": {key: (str(value).strip() if key != "score_confidence" else _coerce_float(value)) for key, value in trust.items()},
-        "example_answer": str(source.get("example_answer", DEFAULT_FEEDBACK["example_answer"])).strip(),
+        "example_answer": example_text(source.get("example_answer")),
     }

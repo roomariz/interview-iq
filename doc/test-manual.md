@@ -91,7 +91,7 @@
 - Confirm `st.session_state.feedback` with structured evaluation data routes the app to the feedback screen.
 - Confirm an invalid API key or LLM outage leaves the user on the question screen and shows the inline evaluation-failure warning instead of an exception page.
 - Confirm the configured `MODEL_NAME` in the repo `.env` is used for OpenRouter requests, that the client uses `https://openrouter.ai/api/v1`, and that question generation prefers Llama 3 8B, then Mistral 7B, then Gemma 3 12B before falling back to `openai/gpt-5-nano` if needed.
-- Confirm evaluation uses the Google-only free chain `google/gemma-4-31b-it:free` -> `google/gemma-3-12b-it:free`, and returns a controlled degraded result if all models fail.
+- Confirm evaluation uses the Google-only free chain `google/gemma-4-31b-it:free` -> `google/gemma-3-12b-it:free`, and reports an evaluation error without placeholder scores if all models fail.
 - Confirm malformed-but-repairable JSON is repaired before fallback, while invalid schema still fails with a validation log that includes the model, validation status, and reason.
 - Confirm a transient failure such as 429 or a timeout retries the same model with exponential backoff, while 400/403 fail fast and model-unavailable errors move to the next configured model.
 - Confirm the app logs the resolved OpenRouter model at startup so the Streamlit console shows which model is active.
@@ -135,3 +135,94 @@
 - Run `pytest tests/test_session_summary.py` to verify session summary aggregation.
 - Run `pytest tests/test_feedback_screen.py` to verify feedback formatting, score mapping, and feedback routing.
 - Confirm the direct evaluator path still uses a single OpenRouter client call, while out-of-scope answers short-circuit to the hard relevance gate.
+
+## Phase 1 offline verification
+
+1. Install `requirements-dev.txt` into the project virtual environment.
+2. Run the focused pytest command in [Phase 1 integration](phase1-integration.md).
+   Calls are mocked and external socket connections are blocked, including during
+   background worker shutdown.
+3. Run `python -m uvicorn api.index:app --reload` and open
+   `http://127.0.0.1:8000/api/health`; expect `{"status":"ok"}` without LLM credentials.
+4. Launch Streamlit as usual and verify the existing setup, question, feedback and
+   example-answer screens. No frontend request should target FastAPI in Phase 1.
+5. Use mocked workflow tests for success, invalid JSON, relevance checks,
+   authentication errors, timeouts, rate limits and opt-in OpenRouter fallback.
+6. Confirm exhausted evaluations display the existing retry error and do not save
+   placeholder scores. Provider changes require restarting the application.
+7. With a local Ollama `OLLAMA_HOST` already set in Windows, confirm the project
+   `.env` value `OLLAMA_HOST=https://ollama.com` resolves to the cloud host after restart.
+   `tests/test_ollama_configuration.py` covers this conflict without API calls.
+8. Confirm a project `.env` Ollama key overrides a different inherited key, while
+   environment-only credentials still work. Use the configuration tests; do not
+   print credentials or make a live inference request to test precedence.
+
+Default pytest runs exclude `live` and `e2e` tests. Do not enable live API tests
+for automated verification. Windows in-process API tests require local loopback
+access for asyncio. No live provider request is required for these checks.
+
+## Direct Grok checks
+
+Run `python -m pytest tests/test_grok_provider.py` with `LLM_PROVIDER=open-router`
+in the test process to keep unrelated legacy defaults deterministic. Grok tests
+select their provider explicitly and use mocked responses. Verify model selection,
+xAI URL, bearer authentication, `store=false`, evidence/scoring validation and
+authentication failure without automatic OpenRouter fallback. After changing the
+application provider, restart Streamlit and confirm the private `XAI_API_KEY` is
+a valid xAI API credential. Do not print the key or run paid automated inference.
+
+## Direct Gemini checks
+
+Run `python -m pytest tests/test_google_provider.py` with `LLM_PROVIDER=open-router`
+in the test process; the tests select Google explicitly and use mocked responses.
+Verify Google model configuration, the Chat Completions endpoint, JSON-object mode,
+Pydantic validation, empty/truncated output rejection, quota/timeout retry limits
+and the lack of automatic paid-provider fallback. Existing OpenRouter Google
+models must continue using the OpenRouter Responses API. After setting the private
+`GOOGLE_API_KEY`, restart Streamlit and check the log reports provider `google`.
+No live API call is needed for automated checks.
+
+## Question contract regression checks
+
+Run `python -m pytest tests/test_question_contract_regression.py
+tests/test_question_google_contract.py tests/test_question_worker_snapshot.py -q`
+as one command, with `LLM_PROVIDER=open-router` in the test process. Tests select
+Google explicitly when required, use mocked HTTP and block external inference.
+Confirm partial/malformed responses retry with an exact reason, the Google request
+contains JSON Schema bounds, and invalid backup candidates return a setup error.
+Check that worker cancellation and mutable context do not access Streamlit state.
+Live Gemini acceptance has not been tested as part of this fix.
+
+Run `python -m pytest tests/test_role_only_grounding_regression.py -q` offline.
+Start a session without CV/JD: check all five dimensions, including a slowdown
+and a behavioural example request. Confirm generic monitoring/reaction wording
+is accepted, invented named tools are rejected with an indexed correction, and
+provider failure uses validated backup scenarios. Repeated/invalid backups fail.
+
+## Release-regression relevance checks
+
+Run `.venv/Scripts/python.exe -m pytest tests/test_relevance_regression.py -q`
+offline with `LLM_PROVIDER=open-router`. Use the verbatim fixture in
+`tests/relevance_regression_fixtures.py` in the UI: expect no off-topic gate, no STAR
+or historical-result demand, and a diagnostic evidence follow-up. Check unrelated
+answers still fail when confirmed, uncertain verdicts display low reliability,
+and provider fallback follows the same contract. No live inference is required.
+
+## Feedback integrity regression
+
+Run `.venv/Scripts/python.exe -m pytest tests/test_feedback_integrity_regression.py -q`.
+Replay `tests/fixtures/live_evaluation.json`: empty feedback must stay empty;
+no caching/scaling advice, irrelevant strength, `{}` example or repeat-gap probe
+may appear as validated feedback. Low trust must prevent new memory entries.
+Check numerical score confidence agrees across trust, warning and decision detail.
+Use a genuinely unrelated answer to verify the off-topic gate still fails it.
+See [investigation and comparison](evaluation-reliability-fix.md).
+
+## Performance versus reliability regression
+
+Run `.venv/Scripts/python.exe -m pytest tests/test_performance_reliability_separation.py -q`.
+With a strong answer, check that low evaluator confidence retains the score-based
+verdict and shows provisional status. At 0.75, a clean assessment has medium trust
+and no hallucination classification. Check supported coaching remains visible,
+unsupported advice has a recorded reason, and rollback/disable follow-ups are short.
+Criteria must match the question type. Failed coaching repair must not alter scores.

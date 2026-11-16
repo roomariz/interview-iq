@@ -21,7 +21,7 @@ The app now uses a layered structure with Streamlit screens in `frontend/` and b
 - The question generator now carries previous questions into the prompt so later questions avoid repeating the same pattern.
 - The task-aware OpenRouter chain now prefers `google/gemma-4-31b-it:free`, then `google/gemma-3-12b-it:free`.
   - Question generation uses that chain first and can fall back to `openai/gpt-5-nano` as a reliability safety net.
-  - Evaluation uses the same free ranking, but returns a controlled degraded result if every evaluation model fails.
+  - Evaluation uses the same free ranking. If every evaluation model fails, the existing error flow asks you to retry without assigning placeholder scores.
   - The shared settings module now also reads optional `GOOGLE_API_KEY` and `XAI_API_KEY` entries from the repo `.env`, which keeps the backend client import stable even when those keys are unset.
 - The app now logs the resolved OpenRouter model at startup so you can confirm which model Streamlit is using.
 - The question-generation log now includes the provider and model that produced the current questionnaire, and the question screen shows that source in a small status line.
@@ -131,3 +131,72 @@ The app now uses a layered structure with Streamlit screens in `frontend/` and b
 - Backend evaluation now expects structured evidence-first JSON with metrics, actions, reasoning, technical accuracy, clarity, structure, relevance, strengths, improvement areas, and an overall summary.
 - Backend report download now produces a JSON session report payload for the summary flow.
 - Backend session summary now aggregates scores, duration, strengths, and next steps to match the session summary mockup.
+
+## Phase 1 provider configuration
+
+The interview screens and session storage are unchanged. Administrators can set
+`LLM_PROVIDER=ollama`, `OLLAMA_API_KEY`, `OLLAMA_MODEL=gemma4:cloud` and
+`OLLAMA_HOST=https://ollama.com` in the application environment or private `.env`.
+Restart Streamlit after changing settings. No local Ollama installation is needed.
+Explicit `OLLAMA_HOST` and `OLLAMA_API_KEY` values in `.env` take precedence over
+inherited Windows settings, so the app uses the project cloud address and key.
+
+OpenRouter remains the default. Set `LLM_PROVIDER=open-router` to switch back.
+Ollama failures reach OpenRouter only with `OLLAMA_FALLBACK_TO_OPENROUTER=true`
+and an `OPENROUTER_API_KEY`. Cloud JSON is requested through prompts and validated
+locally; it is not guaranteed by the model. Failed evaluations request a retry
+without assigning scores. The API currently provides only `/api/health`;
+Streamlit continues to call the existing services directly.
+
+See [Phase 1 integration](phase1-integration.md) for setup and limitations.
+
+## Direct Grok provider
+
+Set `LLM_PROVIDER=grok`, `GROK_MODEL=grok-4.3` and a valid `XAI_API_KEY`
+in the private application configuration, then restart Streamlit using the project
+virtual environment. Grok calls go directly to xAI; OpenRouter and Ollama are not
+used as automatic fallback providers. Existing interview screens remain unchanged.
+An xAI API key and account access are separate from a Grok chat subscription.
+
+## Direct Google Gemini provider
+
+Set `LLM_PROVIDER=google`, `GOOGLE_MODEL=gemini-3.5-flash-lite` and a valid
+`GOOGLE_API_KEY` in your private `.env`, then restart Streamlit. Create the key at
+https://aistudio.google.com/apikey; never paste it into chat or commit it. The
+selected model has free-tier input/output according to Google's current pricing,
+subject to project eligibility and quotas. Your Google project's billing settings
+determine the applicable tier. No fallback to another paid provider is enabled.
+The existing screens, session management and evaluation checks remain in place.
+
+## Question generation reliability
+
+Gemini requests exactly five base questions covering the five interview categories
+and capability dimensions. Partial responses are retried with a specific correction.
+Existing question-count, relevance, scenario and duplicate checks remain active.
+If neither model output nor existing backup candidates pass validation, the app
+returns to setup with a retry error. It does not display invalid backup questions.
+
+Without a CV or job description, questions use the selected role and do not assume
+named tools or past candidate experience. Backup scenarios cover the same five
+dimensions and must pass the same checks as model questions.
+
+## Question relevance
+
+Technical scenarios are assessed against the question you answered. Missing STAR,
+personal examples or historical metrics do not make an answer off-topic. Uncertain
+relevance produces provisional feedback; confirmed off-topic answers retain the
+relevance gate. Follow-ups stay tied to the original question and submitted answer.
+
+## Feedback reliability
+
+Empty feedback lists stay empty. Unsupported claims and malformed example answers
+are withheld. Technical scenarios do not require STAR or historical results.
+Provisional evaluations do not store conclusions in future-session memory.
+Feedback confidence and verdict confidence are displayed separately.
+
+## Performance and assessment confidence
+
+A provisional assessment keeps the score-based performance verdict. Confidence
+and candidate performance are separate signals. Supported coaching stays visible
+at low confidence; missing coaching receives one feedback-only repair attempt.
+Follow-ups probe an actual answer decision without repeating the whole question.

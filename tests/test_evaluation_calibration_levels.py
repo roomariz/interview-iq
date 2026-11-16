@@ -1,3 +1,4 @@
+import json
 import pytest
 from unittest.mock import patch
 
@@ -40,10 +41,15 @@ def _payload(scores, reasoning_depth="none", trust_level="low", labels=None, key
 
 
 def _evaluate(answer, context, payload, relevant=True):
+    support = {"feedback_support": [
+        {"claim": claim, "answer_quote": answer, "question_quote": QUESTION}
+        for key in ("strengths", "key_issues", "improvements")
+        for claim in payload.get("feedback", {}).get(key, [])
+    ]}
     with patch("interview_app_backend.services.evaluation_service.is_answer_relevant", return_value=relevant), patch(
         "interview_app_backend.services.evaluation_service.get_openrouter_client", return_value=object()
     ), patch(
-        "interview_app_backend.services.evaluation_service.call_llm", return_value="{}"
+        "interview_app_backend.services.evaluation_service.call_llm", return_value=json.dumps(support)
     ), patch(
         "interview_app_backend.services.evaluation_service.generate_reference_answer", return_value="Reference answer."
     ), patch("interview_app_backend.services.evaluation_service.calculate_semantic_similarity", return_value=0.88), patch(

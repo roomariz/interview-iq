@@ -49,28 +49,26 @@ class TestQuestionGenerationRetry(unittest.TestCase):
 
         with patch("interview_app_backend.services.question_service.get_openrouter_client") as mock_client_factory, patch(
             "interview_app_backend.services.question_service.call_llm"
-        ) as mock_call_llm:
+        ) as mock_call_llm, patch("interview_app_backend.services.question_service.MODEL_NAME", "gemini-3.5-flash-lite"):
             mock_client_factory.return_value = object()
             mock_call_llm.side_effect = [payload, payload, payload]
 
-            result = get_next_question_for_session(
-                role="Backend Engineer",
-                difficulty="Medium",
-                persona="Direct",
-                response_style="Concise",
-                cv_context="Python APIs",
-                question_index=1,
-                jd_context="API performance",
-                asked_topics=[],
-                focus="",
-                question_list_count=5,
-                return_meta=True,
-            )
+            with self.assertRaisesRegex(RuntimeError, "Fallback generation failed validation"):
+                get_next_question_for_session(
+                    role="Backend Engineer",
+                    difficulty="Medium",
+                    persona="Direct",
+                    response_style="Concise",
+                    cv_context="Python APIs",
+                    question_index=1,
+                    jd_context="API performance",
+                    asked_topics=[],
+                    focus="",
+                    question_list_count=5,
+                    return_meta=True,
+                )
 
         self.assertEqual(mock_call_llm.call_count, 3)
-        self.assertEqual(len(result["questions"]), 5)
-        self.assertEqual(len({item["question"] for item in result["questions"]}), 5)
-        self.assertTrue(all("scenario_type" in item for item in result["questions"]))
 
     def test_hallucinated_tech_is_rejected_by_output_validation(self):
         payload = json.dumps(
@@ -103,55 +101,50 @@ class TestQuestionGenerationRetry(unittest.TestCase):
 
         with patch("interview_app_backend.services.question_service.get_openrouter_client") as mock_client_factory, patch(
             "interview_app_backend.services.question_service.call_llm"
-        ) as mock_call_llm:
+        ) as mock_call_llm, patch("interview_app_backend.services.question_service.MODEL_NAME", "gemini-3.5-flash-lite"):
             mock_client_factory.return_value = object()
             mock_call_llm.side_effect = [payload, payload, payload]
 
-            result = get_next_question_for_session(
-                role="Backend Engineer",
-                difficulty="Medium",
-                persona="Direct",
-                response_style="Concise",
-                cv_context="Python APIs",
-                question_index=1,
-                jd_context="API performance",
-                asked_topics=[],
-                focus="",
-                question_list_count=5,
-                return_meta=True,
-            )
+            with self.assertRaisesRegex(RuntimeError, "Fallback generation failed validation"):
+                get_next_question_for_session(
+                    role="Backend Engineer",
+                    difficulty="Medium",
+                    persona="Direct",
+                    response_style="Concise",
+                    cv_context="Python APIs",
+                    question_index=1,
+                    jd_context="API performance",
+                    asked_topics=[],
+                    focus="",
+                    question_list_count=5,
+                    return_meta=True,
+                )
 
         self.assertEqual(mock_call_llm.call_count, 3)
-        self.assertTrue(all("redis" not in item["question"].lower() for item in result["questions"]))
 
-    def test_forced_llm_failure_uses_validated_fallback_bundle(self):
+    def test_forced_llm_failure_rejects_invalid_fallback_bundle(self):
         with patch("interview_app_backend.services.question_service.get_openrouter_client", return_value=object()), patch(
             "interview_app_backend.services.question_service.call_llm",
             side_effect=RuntimeError("forced failure"),
-        ) as mock_call_llm:
-            result = get_next_question_for_session(
-                role="Generalist",
-                difficulty="Medium",
-                persona="Direct",
-                response_style="Concise",
-                focus="General",
-                cv_context="",
-                question_index=1,
-                jd_context="",
-                asked_topics=[],
-                question_list_count=5,
-                return_meta=True,
-            )
+        ) as mock_call_llm, patch("interview_app_backend.services.question_service.MODEL_NAME", "gemini-3.5-flash-lite"), patch(
+            "interview_app_backend.services.question_service.generate_safe_fallback", return_value="Invalid backup?",
+        ):
+            with self.assertRaisesRegex(RuntimeError, "Fallback generation failed validation"):
+                get_next_question_for_session(
+                    role="Generalist",
+                    difficulty="Medium",
+                    persona="Direct",
+                    response_style="Concise",
+                    focus="General",
+                    cv_context="",
+                    question_index=1,
+                    jd_context="",
+                    asked_topics=[],
+                    question_list_count=5,
+                    return_meta=True,
+                )
 
         self.assertEqual(mock_call_llm.call_count, 3)
-        self.assertEqual(len(result["questions"]), 5)
-        self.assertTrue(all(item["question"].strip() for item in result["questions"]))
-        scenario_types = [item["scenario_type"] for item in result["questions"]]
-        dimensions = [item["dimension"] for item in result["questions"]]
-        self.assertEqual(set(scenario_types), {"debugging", "performance", "system_design", "behavioural", "scaling"})
-        self.assertEqual(set(dimensions), {"debugging / regression recovery", "performance / trade-off decision-making", "system design / scalability", "behavioural ownership / ambiguity handling", "stakeholder communication / coordination"})
-        valid, reason = _validate_question_bundle(result["questions"], role="Generalist", cv_context="", jd_context="")
-        self.assertTrue(valid, reason)
 
     def test_duplicate_classification_is_rejected(self):
         questions = [

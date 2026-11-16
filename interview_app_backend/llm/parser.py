@@ -4,6 +4,7 @@ from collections.abc import Mapping
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from interview_app_backend.services.feedback_integrity import example_text
 from interview_app_backend.llm.json_utils import repair_json_payload
 from interview_app_backend.llm.prompt_contract import parse_prompt_contract
 
@@ -111,13 +112,14 @@ class FollowUpSchema(BaseModel):
 
 
 class EvaluationSchema(BaseModel):
+    criteria: list[str] = Field(default_factory=list)
     evidence: EvidenceSchema = Field(default_factory=EvidenceSchema)
     scores: ScoreSchema
     labels: LabelSchema
     feedback: FeedbackSchema = Field(default_factory=FeedbackSchema)
     reasoning: ReasoningSchema = Field(default_factory=ReasoningSchema)
     follow_up: FollowUpSchema = Field(default_factory=FollowUpSchema)
-    example_answer: dict[str, str] = Field(default_factory=dict)
+    example_answer: str = ""
     strengths: list[str] = Field(default_factory=list)
     improvement_areas: list[str] = Field(default_factory=list)
     overall_summary: str = ""
@@ -146,7 +148,7 @@ class EvaluationSchema(BaseModel):
                     reasoning = dict(legacy_assessment)
 
         follow_up = data.get("follow_up") if isinstance(data.get("follow_up"), Mapping) else {}
-        example_answer = data.get("example_answer") if isinstance(data.get("example_answer"), Mapping) else {}
+        example_answer = example_text(data.get("example_answer"))
 
         scores_source = data.get("scores") if isinstance(data.get("scores"), Mapping) else {}
         labels_source = data.get("labels") if isinstance(data.get("labels"), Mapping) else {}

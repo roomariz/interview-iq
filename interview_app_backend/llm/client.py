@@ -1,8 +1,5 @@
-import logging
 import time
-import threading
 from collections.abc import Callable
-from collections.abc import Mapping
 
 try:
     from openai import OpenAI, APIError, APITimeoutError, RateLimitError
@@ -19,28 +16,30 @@ except ModuleNotFoundError:
     class RateLimitError(Exception):
         pass
 
-try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
-except ModuleNotFoundError:
-    genai = None
-    GENAI_AVAILABLE = False
-
 from config.settings import APP_TITLE
-from config.settings import MODEL_NAME
+from config.settings import OPENROUTER_MODEL_NAME as MODEL_NAME
 from config.settings import OPENROUTER_API_KEY
-from config.settings import GOOGLE_API_KEY
 from config.settings import LLM_TIMEOUT
 from config.model_profiles import get_fallback_chain
 from config.model_profiles import is_free_model
 from interview_app_backend.utils.logging_config import get_llm_logger
+
+from interview_app_backend.llm.client_support import (
+    _extract_output_text, _extract_provider, _normalise_task_name,
+    _set_last_llm_call_metadata, _is_model_unavailable_error, _is_transient_error,
+    _is_permanent_error, _task_requires_json,
+    get_last_llm_call_metadata, clear_last_llm_call_metadata,  # noqa: F401
+)
+from config import settings
+from interview_app_backend.llm.ollama_client import OllamaCloudClient
+from interview_app_backend.llm.google_chat import call_google_chat
+from interview_app_backend.llm.provider_clients import get_grok_client, get_google_client, create_google_client  # noqa: F401
 
 LOGGER = get_llm_logger()
 MAX_MODELS_PER_PROVIDER = 4
 MAX_ATTEMPTS_PER_MODEL = 3
 MAX_TOTAL_CALL_SECONDS = 12
 RETRY_BACKOFF_BASE_SECONDS = 2
-_LLM_CALL_STATE = threading.local()
 
 def create_openrouter_client(api_key: str) -> OpenAI:
     return OpenAI(
@@ -52,201 +51,23 @@ def create_openrouter_client(api_key: str) -> OpenAI:
         },
     )
 
-def get_openrouter_client() -> OpenAI:
+def get_openrouter_client() -> OpenAI | OllamaCloudClient:
+    """Legacy service factory; honours the configured LLM provider."""
+    if settings.LLM_PROVIDER == "ollama":
+        return OllamaCloudClient()
+    if settings.LLM_PROVIDER == "grok":
+        return get_grok_client()
+    if settings.LLM_PROVIDER == "google":
+        return get_google_client()
     if not OPENROUTER_API_KEY:
         raise ValueError("OPENROUTER_API_KEY is not set")
     return create_openrouter_client(OPENROUTER_API_KEY)
 
-def create_google_client(api_key: str) -> OpenAI:
-    return OpenAI(
-        api_key=api_key,
-        base_url="https://generativelanguage.googleapis.com/v1beta",
-    )
-
-def get_google_client() -> OpenAI:
-    if not GOOGLE_API_KEY:
-        raise ValueError("GOOGLE_API_KEY is not set")
-    return create_google_client(GOOGLE_API_KEY)
-
-
-def _call_google(prompt: str, api_key: str, temperature: float | None = None) -> str:
-    if not GENAI_AVAILABLE:
-        raise RuntimeError("google-generativeai library not installed")
-    for attempt in range(MAX_ATTEMPTS_PER_MODEL):
-        try:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.0-flash")
-            LOGGER.info("Calling Google Gemini - attempt %s", attempt + 1)
-            response = model.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": temperature or 0.7,
-                    "max_output_tokens": 4096,
-                },
-            )
-            text = response.text
-            LOGGER.info("Success with Google Gemini")
-            return text
-        except Exception as exc:
-            LOGGER.warning("Google API failed on attempt %s: %s", attempt + 1, exc)
-            if attempt < MAX_ATTEMPTS_PER_MODEL - 1:
-                time.sleep(2 ** (attempt + 1))
-                continue
-            raise
-    raise RuntimeError("Google API failed after retries")
-
-
-def _looks_like_html(text: str) -> bool:
-    lowered = text.lstrip().lower()
-    return lowered.startswith("<!doctype html") or lowered.startswith("<html") or "<html" in lowered or "</html>" in lowered
-
-
-def _is_auth_error(response: str) -> bool:
-    lower = response.lower()
-    auth_indicators = ["signed-out", "token-invalid", "auth", "login", "sign in"]
-    return any(indicator in lower for indicator in auth_indicators)
-
-
-def _extract_output_text(response: object, *, provider: str, model: str) -> str:
-    if isinstance(response, str):
-        text = str(response).strip()
-        if _looks_like_html(text):
-            if _is_auth_error(text):
-                raise RuntimeError("Authentication failed - please check your API key")
-            return ""
-        if not text:
-            LOGGER.warning("llm_empty_output", extra={"provider": provider, "model": model, "raw_output_length": len(text)})
-        return text if text else ""
-    if isinstance(response, Mapping):
-        extracted = response.get("output_text", "")
-        text = str(extracted).strip() if extracted else ""
-        if _looks_like_html(text):
-            if _is_auth_error(text):
-                raise RuntimeError("Authentication failed - please check your API key")
-            return ""
-        if not text:
-            LOGGER.warning("llm_empty_output", extra={"provider": provider, "model": model, "raw_output_length": len(text)})
-        return text
-
-    output_text = getattr(response, "output_text", "")
-    if output_text:
-        extracted = output_text
-        text = str(extracted).strip() if extracted else ""
-        if _looks_like_html(text):
-            if _is_auth_error(text):
-                raise RuntimeError("Authentication failed - please check your API key")
-            return ""
-        if not text:
-            LOGGER.warning("llm_empty_output", extra={"provider": provider, "model": model, "raw_output_length": len(text)})
-        return text
-    LOGGER.warning("llm_empty_output", extra={"provider": provider, "model": model, "raw_output_length": len(str(output_text or ""))})
-    return ""
-
-
-def _extract_provider(model: str) -> str:
-    return model.split("/")[0] if "/" in model else "unknown"
-
-
-def _normalise_task_name(task: str | None) -> str:
-    cleaned = str(task or "").strip()
-    return cleaned or "general"
-
-
-def _set_last_llm_call_metadata(*, status: str, task: str, provider: str, model: str, attempt: int | None = None) -> None:
-    _LLM_CALL_STATE.last_call = {
-        "status": status,
-        "task": task,
-        "provider": provider,
-        "model": model,
-        "attempt": attempt,
-    }
-
-
-def get_last_llm_call_metadata() -> dict[str, str | int | None]:
-    metadata = getattr(_LLM_CALL_STATE, "last_call", {})
-    return dict(metadata) if isinstance(metadata, dict) else {}
-
-
-def clear_last_llm_call_metadata() -> None:
-    if hasattr(_LLM_CALL_STATE, "last_call"):
-        delattr(_LLM_CALL_STATE, "last_call")
-
-
-def _log_llm_event(
-    level: int,
-    *,
-    task: str,
-    provider: str,
-    model: str,
-    status: str,
-    attempt: int | None = None,
-    detail: str | None = None,
-) -> None:
-    extra = {
-        "task": task,
-        "provider": provider,
-        "model": model,
-        "status": status,
-    }
-    if attempt is not None:
-        extra["attempt"] = attempt
-    if detail:
-        extra["detail"] = detail
-
-    message = f"LLM_{status.upper()} task={task} model={model}"
-    if attempt is not None:
-        message += f" attempt={attempt}"
-    if detail:
-        message += f" detail={detail}"
-
-    LOGGER.log(level, message, extra=extra)
-
-
-def _is_model_unavailable_error(exc: Exception) -> bool:
-    error_str = str(exc).lower()
-    return "404" in error_str or "no endpoints available" in error_str or "guardrail" in error_str
-
-
-def _is_transient_error(exc: Exception) -> bool:
-    status_code = _status_code_from_exception(exc)
-    if status_code is not None:
-        return status_code == 429 or 500 <= status_code < 600
-    error_str = str(exc).lower()
-    network_keywords = ["timeout", "connection", "network", "refused", "reset", "dns"]
-    return any(keyword in error_str for keyword in network_keywords)
-
-
-def _is_permanent_error(exc: Exception) -> bool:
-    status_code = _status_code_from_exception(exc)
-    return status_code in {400, 402, 403}
-
-
-def _task_requires_json(task_name: str) -> bool:
-    return task_name.startswith("evaluation.evidence_extraction") or task_name.startswith("evaluation.scoring")
-
-
-def _status_code_from_exception(exc: Exception) -> int | None:
-    for attribute in ("status_code", "status", "code"):
-        value = getattr(exc, attribute, None)
-        try:
-            code = int(value)
-        except (TypeError, ValueError):
-            continue
-        if code > 0:
-            return code
-    message = str(exc)
-    for token in ("400", "402", "403", "404", "429"):
-        if token in message:
-            return int(token)
-    return None
-
-
 PROVIDER_MODELS = {
     "open-router": MODEL_NAME,
-    "grok": "grok-2-1212",
-    "google": "gemini-2.0-flash",
+    "grok": settings.GROK_MODEL,
+    "google": settings.GOOGLE_MODEL,
 }
-
 
 def call_llm(
     prompt: str,
@@ -257,9 +78,28 @@ def call_llm(
     should_abort: Callable[[], bool] | None = None,
     max_models_per_provider: int = MAX_MODELS_PER_PROVIDER,
 ) -> str:
+    if settings.LLM_PROVIDER in {"grok", "google"}:
+        provider = settings.LLM_PROVIDER
+    if isinstance(client, OllamaCloudClient) or provider == "ollama":
+        ollama_client = client if isinstance(client, OllamaCloudClient) else OllamaCloudClient()
+        try:
+            output = ollama_client.call(prompt, temperature, task, should_abort)
+            _set_last_llm_call_metadata(status="success", task=_normalise_task_name(task),
+                                        provider="ollama", model=ollama_client.model)
+            return output
+        except RuntimeError as exc:
+            _set_last_llm_call_metadata(status="failure", task=_normalise_task_name(task),
+                                        provider="ollama", model=ollama_client.model)
+            if str(exc) == "cancelled" or not settings.OLLAMA_FALLBACK_TO_OPENROUTER:
+                raise
+            if not OPENROUTER_API_KEY:
+                raise RuntimeError("OpenRouter fallback requires OPENROUTER_API_KEY") from exc
+            client = create_openrouter_client(OPENROUTER_API_KEY)
+            provider = "open-router"
     last_error: Exception | None = None
     task_name = _normalise_task_name(task)
     primary_model = PROVIDER_MODELS.get(provider, MODEL_NAME) if provider else MODEL_NAME
+    use_google_chat = provider == "google"
     if is_free_model(primary_model):
         models_to_try = get_fallback_chain(primary_model, task=task_name)
     else:
@@ -276,6 +116,8 @@ def call_llm(
                 break
             try:
                 request_kwargs = {"model": model, "input": prompt, "timeout": LLM_TIMEOUT}
+                if provider == "grok":
+                    request_kwargs["store"] = False
                 if temperature is not None:
                     request_kwargs["temperature"] = temperature
                 LOGGER.info(
@@ -287,13 +129,16 @@ def call_llm(
                         "attempt": attempt,
                     }
                 )
-                response = client.responses.create(**request_kwargs)
+                response = call_google_chat(client, request_kwargs, task_name) if use_google_chat else client.responses.create(**request_kwargs)
                 output_text = _extract_output_text(response, provider=provider, model=model)
                 if _task_requires_json(task_name):
                     try:
-                        from interview_app_backend.llm.parser import parse_json_response
+                        from interview_app_backend.llm.parser import parse_evidence_response, parse_json_response
 
-                        parse_json_response(output_text, model=model, provider=provider, task=task_name)
+                        if task_name.startswith("evaluation.evidence_extraction"):
+                            parse_evidence_response(output_text)
+                        else:
+                            parse_json_response(output_text, model=model, provider=provider, task=task_name)
                     except Exception as exc:
                         last_error = exc
                         reason = "invalid_schema" if exc.__class__.__name__ == "ValidationError" else "invalid_json"

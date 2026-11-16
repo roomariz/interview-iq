@@ -1,6 +1,8 @@
 import pytest
 from config.settings import GOOGLE_API_KEY
 
+pytestmark = pytest.mark.live
+
 
 def test_google_api_key_is_set():
     """Test that Google API key is configured."""

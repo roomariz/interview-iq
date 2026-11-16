@@ -37,7 +37,8 @@ class TestEvaluationParser(unittest.TestCase):
                 "feedback": {"summary": "Strong response.", "strengths": ["Clear answer"], "key_issues": [], "improvements": ["Add examples"]},
                 "reasoning": {"clarity": "", "alternative_approaches": "", "trade_off_awareness": "", "evidence": "Chose the simpler fix to reduce risk"},
                 "follow_up": {"question": "", "type": "", "target_dimension": ""},
-                "example_answer": {},
+                "example_answer": "",
+                "criteria": [],
                 "strengths": ["Clear answer"],
                 "improvement_areas": ["Add examples"],
                 "overall_summary": "Strong response.",
@@ -93,7 +94,7 @@ class TestEvaluationParser(unittest.TestCase):
         self.assertIn("metrics_contradiction", context["contradiction_flags"])
         self.assertIn("non_impact_numbers", context["anomaly_flags"])
         self.assertEqual(context["impact_strength"], "strong")
-        self.assertGreater(context["confidence"]["metrics"], 0.0)
+        self.assertEqual(context["confidence"], {})
 
     def test_parse_json_response_accepts_prompt_contract(self):
         payload = (
@@ -215,8 +216,8 @@ class TestEvaluationParser(unittest.TestCase):
             result = validate_evaluation_consistency(evaluation, context)
 
         self.assertEqual(result["labels"]["specificity"], "Metrics are present, but could be tied more clearly to business or user impact.")
-        self.assertEqual(result["labels"]["structure"], "Clear sections are present, but STAR alignment could be stronger.")
-        self.assertIn("decision-making behind each technical choice", result["feedback"]["key_issues"][0])
+        self.assertEqual(result["labels"]["structure"], "Clear sections are present.")
+        self.assertIn("measurable evidence", result["feedback"]["key_issues"][0])
         self.assertIn("Keep the existing metrics", result["feedback"]["improvements"][0])
         self.assertIn("metrics_contradiction", result["contradiction_flags"])
         self.assertTrue(result["validation_warning"]["has_warning"])

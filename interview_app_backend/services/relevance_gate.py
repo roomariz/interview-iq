@@ -1,21 +1,11 @@
-import re
-
 from interview_app_backend.services.evaluation_interpretation import build_validation_warning
 from interview_app_backend.services.evaluation_rules import build_normalisation
 
-RELEVANCE_GATE_VERSION = "relevance-gate-v1"
-
-
-def _question_intent_summary(question: str) -> str:
-    tokens = [token for token in re.findall(r"[a-z0-9]+", question.lower()) if len(token) > 3]
-    filtered = [token for token in tokens if token not in {"describe", "question", "answer", "time", "with", "from", "that", "this", "your", "under"}]
-    if not filtered:
-        return "the question"
-    return " ".join(filtered[:4])
+RELEVANCE_GATE_VERSION = "relevance-gate-v2"
 
 
 def build_relevance_gate_evaluation(question: str, answer: str) -> dict:
-    intent = _question_intent_summary(question)
+    intent = question
     scores = {
         "technical_accuracy": 1,
         "clarity": 6,
@@ -47,9 +37,9 @@ def build_relevance_gate_evaluation(question: str, answer: str) -> dict:
         "evidence": {"metrics": [], "actions": [], "reasoning": ""},
         "scores": scores,
         "labels": {
-            "relevance": "Does not address system performance or measurable results",
-            "structure": "Basic narrative, lacks clear STAR structure",
-            "specificity": "No measurable outcomes provided",
+            "relevance": "Does not address the original question",
+            "structure": "Not assessed because the answer is off-topic",
+            "specificity": "No evidence addressing the original question provided",
             "communication": "Clear but not relevant to the question",
             "problem_solving_approach": "No relevant technical problem-solving demonstrated",
         },
@@ -59,16 +49,8 @@ def build_relevance_gate_evaluation(question: str, answer: str) -> dict:
                 "I cannot assess technical approach, because the response stays off topic."
             ),
             "strengths": [],
-            "key_issues": [
-                "The answer is not relevant to the question about system performance",
-                "No measurable results provided",
-                "No technical optimisation or constraints discussed",
-            ],
-            "improvements": [
-                "Focus on a real example involving system performance improvement",
-                "Include measurable metrics such as latency, throughput, or resource usage",
-                "Explain constraints and technical decisions",
-            ],
+            "key_issues": ["The response addresses a different subject from the original question."],
+            "improvements": [f"Address the original question directly: {question}"],
         },
         "reasoning": {
             "clarity": "The response is readable, but it does not answer the asked question.",
@@ -77,20 +59,16 @@ def build_relevance_gate_evaluation(question: str, answer: str) -> dict:
             "evidence": "There is no relevant technical evidence to assess.",
         },
         "follow_up": {
-            "question": "Can you describe a real example where you improved system performance under constraints with measurable results?",
+            "question": f"Please address the original question directly: {question}",
             "type": "relevance_gate",
             "target_dimension": "relevance",
-            "reasoning_action": "Answer the question directly with one concrete example and the result.",
+            "reasoning_action": "Address the substance of the original question.",
             "context_note": f"Grounded in the original question about {intent}.",
             "stage": 1,
         },
         "example_answer": {},
         "strengths": [],
-        "improvement_areas": [
-            "Focus on a real example involving system performance improvement",
-            "Include measurable metrics such as latency, throughput, or resource usage",
-            "Explain constraints and technical decisions",
-        ],
+        "improvement_areas": [f"Address the original question directly: {question}"],
         "overall_summary": (
             f"The answer is not relevant to the question about {intent}, so the technical evaluation cannot be trusted."
         ),
@@ -116,6 +94,7 @@ def build_relevance_gate_evaluation(question: str, answer: str) -> dict:
     warning["validation"]["severity"] = "info"
     warning["validation"]["severity_definition"] = warning["severity_definition"]
     warning["validation"]["trust_level"] = "low"
+    warning["validation"]["score_confidence"] = 0.0
     warning["validation"]["trust_definition"] = warning["trust_definition"]
     warning["reasoning"]["reasoning_depth"] = "not_applicable"
     warning["reasoning"]["reasoning_depth_definition"] = "Reasoning is not applicable because the answer is not relevant to the question."

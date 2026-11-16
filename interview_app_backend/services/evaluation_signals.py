@@ -218,13 +218,7 @@ def build_evaluation_context(evidence: Mapping[str, Any], answer: str = "") -> d
         "has_reasoning": bool(evidence.get("has_reasoning")),
         "has_tradeoffs": bool(evidence.get("has_tradeoffs")),
         "has_alternatives": bool(evidence.get("has_alternatives")),
-        "confidence": {
-            "metrics": _ratio(len(metrics) + len(local_numbers["impactful"]), len(local_numbers["detected"]) + len(metrics) + 1),
-            "structure": 0.92 if evidence.get("has_structure") or structure_markers else 0.28,
-            "reasoning": 0.92 if evidence.get("has_reasoning") or reasoning_markers else 0.28,
-            "tradeoffs": 0.9 if evidence.get("has_tradeoffs") or tradeoff_markers else 0.24,
-            "alternatives": 0.9 if evidence.get("has_alternatives") or alternative_markers else 0.24,
-        },
+        "confidence": dict(evidence.get("confidence", {})),
         "contradiction_flags": contradiction_flags,
         "anomaly_flags": anomaly_flags,
         "grouped_anomaly_flags": {

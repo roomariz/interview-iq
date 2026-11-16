@@ -2,7 +2,7 @@
 
 ## Scope
 
-The repository now separates frontend, backend, shared, and config concerns.
+The repository now separates frontend, backend, shared, and config concerns. CI pins Ubuntu 24.04 for compatibility with Playwright 1.53.x; avoid `ubuntu-latest` until Playwright supports the newer runner.
 
 ## Files
 
@@ -146,7 +146,7 @@ streamlit run app.py
 - `render_feedback()` now routes the `Show Example Answer` button to the improved-answer screen.
 - `render_sample_answer()` renders the question, submitted answer, and stronger example answer in a read-only layout with navigation back to feedback.
 - `render_feedback()` now renders a score-consistency warning, a clearer decision-confidence callout, and follow-up guidance as its own card.
-- `render_feedback()` now uses the weakest score, issue context, and reasoning depth to generate a more targeted follow-up when the payload does not provide one.
+- `build_follow_up()` preserves question-bound backend probes; memory count cannot establish repeated gaps.
 - `show_sample_answer()` stores the rewritten answer in session state before switching to the improved-answer screen.
 - `render_feedback()` now ranks strengths before display so the strongest signals appear first.
 - `render_feedback()` now uses a single reasoning block instead of duplicating the same content.
@@ -162,7 +162,7 @@ streamlit run app.py
 - Grounding and confidence now adjust the final decision when support is too weak, and the frontend receives only a simplified summary of those signals.
 - `render_feedback()` now shows a compact reliability card under Overall Outcome rather than raw pipeline metadata, using a small user-facing assessment label.
 - The evaluator prompt now asks for the prompt-contract JSON shape, and `parse_json_response()` accepts both that contract and the legacy payload shape.
-- `is_answer_relevant()` now uses a deterministic pre-classifier before the semantic verifier, which gives the relevance gate a hard first-pass boundary.
+- `is_answer_relevant()` uses the semantic verdict; deterministic pre-classifier disagreement is an uncertainty signal.
 - `build_evaluation_context()` now combines model evidence with local numeric fallback detection, confidence scoring, and structured anomaly flags.
 - Validation warnings now carry severity, grouped anomaly flags, and a `score_confidence` indicator.
 - Validation warnings now also expose trust level, reasoning depth, and dimension-level contradiction buckets so the flags affect interpretation, not just logging.
@@ -174,3 +174,76 @@ streamlit run app.py
 - `build_report()` now serialises a session summary into a downloadable JSON report payload.
 - `summarise_performance()` now aggregates per-dimension averages and session metadata for the summary screen.
 - The session summary now also carries readable focus areas so the UI can show the weakest themes without exposing internal scoring weights.
+
+## FastAPI and Ollama Cloud: Phase 1
+
+- `api/index.py` exposes a credential-free `GET /api/health`; run
+  `python -m uvicorn api.index:app --reload` locally. Streamlit is not connected to it.
+- `config/settings.py` selects `LLM_PROVIDER` and retains the separate
+  `OPENROUTER_MODEL_NAME`, preserving all existing OpenRouter rankings.
+- The legacy `get_openrouter_client()` service factory now honours the selected
+  provider; `create_openrouter_client()` always creates an OpenRouter SDK client.
+- `llm/ollama_client.py` calls the documented cloud HTTP API using `requests`,
+  bearer authentication and two bounded attempts. No local server is contacted.
+- `gemma4:cloud` maps to the documented direct API model `gemma4:31b`. Other model
+  IDs pass through unchanged. Cloud requests omit the unsupported `format` field.
+- Question contracts and the existing Pydantic evidence/scoring parsers validate
+  cloud output before success or optional fallback. Plain-text relevance, reference
+  and example-answer requests retain their existing formats.
+- `llm/client_support.py` holds existing response, retry and thread-local metadata
+  helpers; `services/pipeline_output.py` holds existing relevance/trust formatting.
+- Exhausted evaluation failures raise a safe error for the existing UI error flow.
+  The former fabricated 5/10 degraded scores have been removed.
+- OpenAI SDK 1.109.1 supports the existing Responses API; evidence calls now use
+  the evidence Pydantic schema rather than the scoring schema.
+- New provider settings prefer process environment variables, except `OLLAMA_HOST`
+  and `OLLAMA_API_KEY`: non-empty project `.env` values override inherited settings.
+  Environment-only credentials remain supported. Never log either key value.
+  Existing OpenRouter model and timeout precedence remains unchanged.
+
+See [Phase 1 integration](phase1-integration.md) for configuration and checks.
+
+## Direct xAI selection
+
+`LLM_PROVIDER=grok` reuses `provider_clients.get_grok_client()` with
+`https://api.x.ai/v1`. `GROK_MODEL` defaults to `grok-4.3` and overrides the retired
+legacy Grok model. Dispatch honours the selected provider even when question
+services pass their legacy `open-router` argument. The existing OpenAI SDK
+Responses API, Pydantic evidence/scoring validation, relevance gates and bounded
+retries are reused. xAI requests set `store=false`; no response history is created
+through the Responses API. No cross-provider fallback is added for Grok.
+`tests/test_grok_provider.py` mocks SDK responses and HTTP transport.
+
+## Direct Google Gemini selection
+
+`LLM_PROVIDER=google` selects the existing Google client with the documented base
+URL `https://generativelanguage.googleapis.com/v1beta/openai/`. `GOOGLE_MODEL`
+defaults to `gemini-3.5-flash-lite`. `llm/google_chat.py` uses Chat Completions
+instead of the Responses API and normalises its output for the existing services.
+Question calls request JSON Schema with exact array and metadata counts; evidence
+and scoring keep JSON-object mode. All responses are also validated locally.
+Empty, blocked or truncated completions fail explicitly. Existing bounded retries
+handle rate limits and timeouts; Google has no automatic cross-provider fallback.
+`tests/test_google_provider.py` covers mocked SDK/HTTP and evaluation workflows.
+Startup logging now reports the selected provider and model without key values.
+
+## Question generation contract
+
+`llm/question_contract.py` owns the explicit per-call count, balanced category
+distribution, Pydantic bundle and Google response schema. Generation defaults to
+five questions for Gemini and one per call for the existing OpenRouter free profile.
+Retries request a complete corrected set and preserve the validation reason.
+`services/question_service.py` and `question_generation_job.py` remain compatibility
+interfaces; implementations were split into modules below the 250-line limit.
+Workers receive plain copied data and an `Event.is_set` cancellation callback;
+Streamlit state and routing are only accessed on the main thread. Existing fallback
+candidates pass the same schema and quality checks; invalid results fail closed.
+See [question validation fix](question-validation-fix.md) for the full trace and tests.
+
+Role-only grounding distinguishes named tools from generic capabilities and uses
+word boundaries. Retry errors include the question index and unsupported tool.
+Backup generation selects scenario-specific text and focus before validation.
+
+## Relevance assessment
+
+See [relevance fix](relevance-evaluation-fix.md), [feedback reliability](evaluation-reliability-fix.md), and [confidence correction](evaluation-confidence-correction.md) for current verdict, coaching and confidence contracts.

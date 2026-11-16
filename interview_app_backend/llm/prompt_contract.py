@@ -35,13 +35,14 @@ def parse_prompt_contract(raw: Mapping[str, object]) -> dict:
         overall_decision=str(evaluation.get("overall_decision", "")).strip(),
     )
     legacy_payload = {
+        "criteria": _clean_list(raw.get("criteria")),
         "evidence": {"metrics": [], "actions": [], "reasoning": ""},
         "scores": scores,
         "labels": labels,
         "feedback": {"summary": summary, "strengths": strengths, "key_issues": key_issues, "improvements": improvements},
         "reasoning": reasoning,
         "follow_up": follow_up,
-        "example_answer": {},
+        "example_answer": raw.get("example_answer", ""),
         "strengths": strengths,
         "improvement_areas": improvements,
         "overall_summary": summary,

@@ -1,3 +1,4 @@
+import json
 import pytest
 import streamlit as st
 from unittest.mock import patch
@@ -54,10 +55,15 @@ def _payload(scores, *, key_issues=None, improvements=None, strengths=None, summ
 
 
 def _evaluate(answer, context, payload, relevant=True):
+    support = {"feedback_support": [
+        {"claim": claim, "answer_quote": answer, "question_quote": QUESTION}
+        for key in ("strengths", "key_issues", "improvements")
+        for claim in payload.get("feedback", {}).get(key, [])
+    ]}
     with patch("interview_app_backend.services.evaluation_service.is_answer_relevant", return_value=relevant), patch(
         "interview_app_backend.services.evaluation_service.get_openrouter_client", return_value=object()
     ), patch(
-        "interview_app_backend.services.evaluation_service.call_llm", return_value="{}"
+        "interview_app_backend.services.evaluation_service.call_llm", return_value=json.dumps(support)
     ), patch(
         "interview_app_backend.services.evaluation_service.generate_reference_answer", return_value="Reference answer."
     ), patch("interview_app_backend.services.evaluation_service.calculate_semantic_similarity", return_value=0.88), patch(
@@ -92,9 +98,11 @@ def test_weak_answer_borderline_or_fail():
     assert result["overall_decision"] in {"borderline pass", "fail"}
     assert result["scores"]["relevance"] >= 4
     assert result["scores"]["specificity"] <= 4
-    assert "metric" in " ".join(view["improvements"]).lower()
+    assert view["improvements"] == payload["feedback"]["improvements"]
+    assert not result["memory_storage_allowed"]
     assert result["validation_warning"]["reasoning_depth"] in {"none", "implicit", "developing"}
-    assert follow_up["target_dimension"] == "specificity"
+    assert QUESTION not in follow_up["question"]
+    assert "decid" in follow_up["question"] or "decision" in follow_up["question"]
 
 
 def test_metrics_without_reasoning_flagged():
@@ -105,7 +113,8 @@ def test_metrics_without_reasoning_flagged():
     assert result["scores"]["specificity"] >= 7
     assert result["scores"]["problem_solving_approach"] <= 6
     assert result["validation_warning"]["reasoning_depth"] in {"implicit", "developing"}
-    assert "trade-off" in " ".join(view["key_issues"]).lower()
+    assert view["key_issues"] == payload["feedback"]["key_issues"]
+    assert not result["memory_storage_allowed"]
     assert follow_up["target_dimension"] == "problem_solving_approach"
 
 
@@ -127,7 +136,8 @@ def test_best_answer_high_trust():
     assert result["validation_warning"]["reasoning_depth"] == "deep"
     assert result["validation_warning"]["trust_level"] == "high"
     assert len(view["improvements"]) <= 2
-    assert any(token in follow_up["question"].lower() for token in ("trade-off", "alternative", "summaris"))
+    assert QUESTION not in follow_up["question"]
+    assert "decid" in follow_up["question"] or "decision" in follow_up["question"]
 
 
 def test_misleading_metrics_reduce_trust():
@@ -137,7 +147,8 @@ def test_misleading_metrics_reduce_trust():
     assert "misleading_metrics" in result["validation_warning"]["anomaly_flags"]
     assert result["scores"]["specificity"] <= 6
     assert result["validation_warning"]["trust_level"] in {"low", "medium"}
-    assert "impact" in " ".join(view["improvements"]).lower()
+    assert view["improvements"] == payload["feedback"]["improvements"]
+    assert not result["memory_storage_allowed"]
 
 
 def test_score_consistency_gap_reduces_trust():
@@ -181,6 +192,8 @@ def test_memory_storage_rules_and_cap():
         "validation_warning": {"reasoning_depth": "implicit", "trust_level": "medium", "interpretation": "Use with caution."},
         "overall_decision_detail": {"decision_confidence": "medium", "trust_level": "medium"},
         "memory_storage_allowed": True,
+        "feedback_validation": {"status": "checked"},
+        "trust": {"trust_level": "medium", "score_confidence": .6},
         "topic_match": True,
     }
     with patch("interview_app_frontend.state.session_manager.evaluate_submission", return_value=repeated):
@@ -190,25 +203,25 @@ def test_memory_storage_rules_and_cap():
     st.session_state["future_session_memory"] = [{"focus": "specificity"}]
     weak_view = normalise_feedback_payload(repeated | {"future_session_memory": []})
     assert build_follow_up(weak_view | {"future_session_memory": []})["stage"] == 1
-    assert build_follow_up(weak_view | {"future_session_memory": [{"focus": "specificity"}]})["stage"] == 2
-    assert build_follow_up(weak_view | {"future_session_memory": [{"focus": "specificity"}, {"focus": "specificity"}]})["stage"] == 3
+    assert build_follow_up(weak_view | {"future_session_memory": [{"focus": "specificity"}]})["stage"] == 1
+    assert build_follow_up(weak_view | {"future_session_memory": [{"focus": "specificity"}, {"focus": "specificity"}]})["stage"] == 1
 
 
-def test_follow_up_progression_avoids_repeated_text():
+def test_memory_count_cannot_invent_repeat_gaps():
     base = normalise_feedback_payload(_payload(_scores(5, 4, 4, 6, 5), key_issues=["Missing specific metrics for improvement"], improvements=["Add metrics to show impact"]))
     q1 = build_follow_up(base | {"future_session_memory": []})
     q2 = build_follow_up(base | {"future_session_memory": [{"focus": "specificity"}]})
     q3 = build_follow_up(base | {"future_session_memory": [{"focus": "specificity"}, {"focus": "specificity"}]})
-    assert [q1["stage"], q2["stage"], q3["stage"]] == [1, 2, 3]
-    assert len({q1["question"], q2["question"], q3["question"]}) == 3
-    assert "lesson" in q3["question"].lower() or "next interview" in q3["question"].lower()
+    assert [q1["stage"], q2["stage"], q3["stage"]] == [1, 1, 1]
+    assert len({q1["question"], q2["question"], q3["question"]}) == 1
+    assert "same gap" not in q3["question"].lower()
 
 
 def test_takeaway_quality():
     takeaway = build_key_takeaway(normalise_feedback_payload(_payload(_scores(6, 5, 4, 6, 5), strengths=["Direct answer"], improvements=["Add metrics to prove impact"])))
     assert len(takeaway.split()) <= 20
-    assert "metrics" in takeaway.lower()
-    assert "add" in takeaway.lower()
+    assert "provisional" in takeaway.lower()
+    assert "no established weakness" in takeaway.lower()
     assert "keep the answer concrete" not in takeaway.lower()
 
 

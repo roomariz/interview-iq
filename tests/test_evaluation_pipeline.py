@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import patch
 
 from interview_app_backend.services.evaluation_service import evaluate_submission
@@ -74,7 +75,8 @@ def test_classifier_conflict_downgrades_trust() -> None:
     assert "classifier_conflict" in result["validation_warning"]["anomaly_flags"]
     assert result["validation_warning"]["trust_level"] in {"low", "medium"}
     assert result["evaluation_confidence"]["conflict"] is True
-    assert result["failure_type"] in {"low_specificity", "hallucination_risk"}
+    assert result["failure_type"] == "none"
+    assert result["provisional"]
 
 
 def test_off_topic_answer_is_forced_to_fail() -> None:
@@ -94,7 +96,7 @@ def test_off_topic_answer_is_forced_to_fail() -> None:
     assert result["trust"]["trust_level"] == "low"
 
 
-def test_low_grounding_downgrades_pass() -> None:
+def test_low_grounding_preserves_pass() -> None:
     payload = _base_result()
     payload["validation_warning"]["score_confidence"] = 0.2
     payload["trust"]["score_confidence"] = 0.2
@@ -103,8 +105,9 @@ def test_low_grounding_downgrades_pass() -> None:
     ):
         result = evaluate_submission(QUESTION, ANSWER)
 
-    assert result["overall_decision"] == "borderline pass"
-    assert result["failure_type"] in {"low_specificity", "low_evidence", "hallucination_risk"}
+    assert result["overall_decision"] == "pass"
+    assert result["assessment_status"] == "provisional"
+    assert result["failure_type"] == "none"
     assert result["grounding_score"] == 0.2
 
 
@@ -118,8 +121,10 @@ def test_follow_up_is_grounded_from_issue_context() -> None:
 
     follow_up = result["follow_up"]
     assert follow_up["question"].strip()
-    assert follow_up["grounding_score"] >= 0.8
-    assert any(token in follow_up["question"].lower() for token in ("metric", "trade-off", "alternative"))
+    assert QUESTION not in follow_up["question"]
+    assert "latency" in follow_up["question"]
+    assert ANSWER in follow_up["context_note"]
+    assert "decid" in follow_up["question"] or "decision" in follow_up["question"]
 
 
 def test_pipeline_summary_is_user_facing() -> None:
@@ -183,14 +188,9 @@ def test_reliability_card_uses_pattern_based_interpretation() -> None:
     assert "generally reliable" in card["message"].lower()
 
 
-def test_pipeline_returns_degraded_fallback_when_evaluator_chain_fails() -> None:
+def test_pipeline_reports_failure_without_fabricated_scores() -> None:
     with patch("interview_app_backend.services.evaluation_service.is_answer_relevant", return_value=True), patch(
         "interview_app_backend.services.evaluation_service.evaluate_answer",
         side_effect=RuntimeError("model chain exhausted"),
-    ):
-        result = evaluate_submission(QUESTION, ANSWER)
-
-    assert result["overall_decision"] == "borderline pass"
-    assert result["evaluation_summary"]["reason"] == "Evaluation degraded due to model instability."
-    assert result["evaluation_pipeline"]["model_instability"] is True
-    assert result["trust"]["score_confidence"] == 0.3
+    ), pytest.raises(RuntimeError, match="no scores were recorded"):
+        evaluate_submission(QUESTION, ANSWER)

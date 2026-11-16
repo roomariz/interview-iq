@@ -60,10 +60,10 @@ class TestQuestionControlLayer(unittest.TestCase):
         self.assertIn("CV: Python APIs", prompt)
         self.assertIn("JOB_DESCRIPTION: Fast APIs", prompt)
         self.assertIn("GAP_ANALYSIS (for ONE question only): {\"missing_skills\": [\"aws\"]}", prompt)
-        self.assertIn('"meta": {', prompt)
-        self.assertIn('"sequence_order": 1-10', prompt)
-        self.assertIn("Output (JSON only):", prompt)
-        self.assertIn('"scenario_type": "debugging | performance | system_design | behavioural | scaling"', prompt)
+        self.assertIn("meta.total_questions", prompt)
+        self.assertIn("sequence_order 1..5", prompt)
+        self.assertIn("Output (JSON only)", prompt)
+        self.assertIn("scenario_type (one of the five dimensions)", prompt)
 
     def test_cv_context_influences_fallback(self):
         with patch("interview_app_backend.services.question_service.get_openrouter_client") as mock_client_factory, patch(

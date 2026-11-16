@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-from config.settings import MODEL_NAME
+from config.settings import LLM_PROVIDER, MODEL_NAME
 from interview_app_frontend.components.shell import SETUP_WIDGET_KEYS
 from interview_app_frontend.ui.screens import render_screen
 from interview_app_frontend.state.session_manager import ensure_session_state
@@ -83,7 +83,7 @@ def main() -> None:
     st.set_page_config(page_title="Interview Practice App", layout="wide")
     clean_widget_state()
     ensure_session_state()
-    LOGGER.info("Resolved OpenRouter model: %s", MODEL_NAME)
+    LOGGER.info("Resolved LLM provider: %s model: %s", LLM_PROVIDER, MODEL_NAME)
     _apply_route_from_query_params()
     inject_styles()
     if st.session_state.get("current_screen") == "question":

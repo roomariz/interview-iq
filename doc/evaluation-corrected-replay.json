@@ -1,0 +1,114 @@
+{
+  "question": "Your application has a regression after a release in your backend engineer team. What evidence would you gather to isolate the cause and recover safely?",
+  "answer": "I would start by assessing the impact of the regression and gathering evidence to determine whether it was introduced by the latest release.\n\nFirst, I would review application logs, error rates, API response times, monitoring dashboards and user reports. I would look for patterns, such as specific endpoints returning errors, increased latency or failures occurring under load. I would also examine request IDs and distributed traces, where available, to identify which services were affected.\n\nNext, I would compare the latest deployment with the previous stable version, reviewing code changes, configuration updates, dependency changes and database migrations. I would correlate the timing of the failures with the deployment to narrow down the possible root cause.\n\nIf the issue significantly affected users, I would prioritise restoring service. Depending on the nature of the release, I would consider rolling back to the last stable version or disabling the affected feature, ensuring that the rollback would not create database or compatibility problems.\n\nOnce the service was stable, I would reproduce the issue, identify the root cause and implement a fix. I would validate it through unit, integration and regression tests before deploying it gradually.\n\nFinally, I would monitor error rates, latency and application behaviour to confirm recovery. I would also document the incident, its root cause and preventive actions, such as improved test coverage or deployment monitoring, to reduce the likelihood of recurrence.",
+  "overall_decision": "pass",
+  "scores": {
+    "relevance": 9,
+    "structure": 8,
+    "specificity": 8,
+    "communication": 9,
+    "problem_solving_approach": 8
+  },
+  "labels": {
+    "relevance": "Highly relevant to the question",
+    "structure": "Well-structured with logical flow",
+    "specificity": "Concrete actions and steps provided",
+    "communication": "Clear and professional",
+    "problem_solving_approach": "Sound diagnostic and recovery approach"
+  },
+  "summary": "The candidate provides a thorough, structured, and logical approach to isolating and recovering from a backend regression, covering evidence gathering, safe recovery, and post-incident verification.",
+  "key_issues": [],
+  "improvements": [],
+  "strengths": [],
+  "criteria": [
+    "Problem-solving clarity and approach",
+    "Ownership and impact",
+    "Communication and structure (STAR)",
+    "Technical depth and trade-offs"
+  ],
+  "reasoning": {
+    "clarity": "Explanations are concise and easy to follow.",
+    "alternative_approaches": "Considers different paths for recovery depending on the release nature.",
+    "trade_off_awareness": "Acknowledges database or compatibility problems during rollbacks.",
+    "evidence": "Uses structured steps for investigation, deployment comparison, and validation."
+  },
+  "follow_up": {
+    "question": "For the scenario “Your application has a regression after a release in your backend engineer team. What evidence would you gather to isolate the cause and recover safely?”, which logs, metrics or traces would you examine first, and how would they distinguish competing causes before you choose a safe recovery action?",
+    "type": "depth_probe",
+    "target_dimension": "problem_solving_approach",
+    "reasoning_action": "Connect your explanation to the original question and the evidence you would use.",
+    "context_note": "Original question: Your application has a regression after a release in your backend engineer team. What evidence would you gather to isolate the cause and recover safely?\nSubmitted response: I would start by assessing the impact of the regression and gathering evidence to determine whether it was introduced by the latest release.\n\nFirst, I would review application logs, error rates, API response times, monitoring dashboards and user reports. I would look for patterns, such as specific endpoints returning errors, increased latency or failures occurring under load. I would also examine request IDs and distributed traces, where available, to identify which services were affected.\n\nNext, I would compare the latest deployment with the previous stable version, reviewing code changes, configuration updates, dependency changes and database migrations. I would correlate the timing of the failures with the deployment to narrow down the possible root cause.\n\nIf the issue significantly affected users, I would prioritise restoring service. Depending on the nature of the release, I would consider rolling back to the last stable version or disabling the affected feature, ensuring that the rollback would not create database or compatibility problems.\n\nOnce the service was stable, I would reproduce the issue, identify the root cause and implement a fix. I would validate it through unit, integration and regression tests before deploying it gradually.\n\nFinally, I would monitor error rates, latency and application behaviour to confirm recovery. I would also document the incident, its root cause and preventive actions, such as improved test coverage or deployment monitoring, to reduce the likelihood of recurrence.",
+    "stage": 1
+  },
+  "topic_match": true,
+  "relevance_gate_applied": false,
+  "failure_type": "hallucination_risk",
+  "memory_storage_allowed": false,
+  "feedback_validation": {
+    "removed_claims": [
+      "Provides a clear example, but not relevant to the question",
+      "Clear communication and easy to follow",
+      "The answer gives strong metrics, but does not clearly explain the decision-making behind each technical choice.",
+      "Trade-offs are only implied, especially around caching, denormalisation, and asynchronous messaging.",
+      "Alternative approaches were not discussed, such as vertical scaling, query redesign only, or queue-based processing without caching.",
+      "Metrics are present, but could be tied more clearly to business or user impact."
+    ],
+    "status": "withheld_claims",
+    "method": "question_and_answer_constraints"
+  },
+  "future_session_memory": [],
+  "overall_decision_detail": {
+    "value": "pass",
+    "score_based_value": "pass",
+    "trust_level": "low",
+    "score_confidence": 0.0,
+    "decision_confidence": "low",
+    "gating_applied": true,
+    "reason": "Evaluation is provisional; uncertain conclusions are withheld."
+  },
+  "validation_warning": {
+    "has_warning": true,
+    "severity": "high",
+    "trust_level": "low",
+    "score_confidence": 0.0,
+    "reasoning_depth": "explicit",
+    "interpretation": "Evaluation is provisional; uncertain conclusions are withheld."
+  },
+  "trust": {
+    "trust_level": "low",
+    "trust_definition": "Low confidence or strong conflict; treat the result as provisional.",
+    "score_confidence": 0.0,
+    "decision_confidence": "low",
+    "impact_strength": "strong",
+    "reason": "Evaluation is provisional; uncertain conclusions are withheld."
+  },
+  "example_answer": "",
+  "key_takeaway": "Key takeaway: Evaluation is provisional; no established weakness recorded.",
+  "trust_display": {
+    "summary": "Low confidence in the feedback. Decision confidence: low. Read the scores as provisional.",
+    "detail": "Low confidence or strong conflict; treat the result as provisional.",
+    "decision": "Decision confidence: Low",
+    "depth": "Evaluation depth: Explicit"
+  },
+  "reliability_card": {
+    "title": "Evaluation Reliability",
+    "confidence": "Low",
+    "grounding": "Weak",
+    "assessment": "Limited evidence",
+    "message": "Evaluation is provisional; uncertain conclusions are withheld.",
+    "dot_colour": "#7f8ea8"
+  },
+  "evaluation_confidence": {
+    "grounding": 0.0,
+    "overall": 0.0
+  },
+  "confidence_definitions": {
+    "score_confidence": "Evidence support for detailed scoring, 0–1; not answer quality.",
+    "relevance": "Semantic assessor confidence in its relevance verdict, 0–1.",
+    "completeness": "Observed evidence coverage, 0–1; not confidence or a required rubric.",
+    "overall": "Minimum of relevance confidence and score confidence.",
+    "decision_confidence": "Confidence in the verdict; confirmed off-topic can be high with zero scoring depth."
+  },
+  "failure_scope": "evaluation_reliability",
+  "memory_policy": "Withhold conclusions when trust is low, claims were removed, or validation is unconfirmed."
+}

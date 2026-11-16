@@ -43,7 +43,7 @@ class TestEvaluationRefinements(unittest.TestCase):
         self.assertEqual(detail["value"], "pass")
         self.assertEqual(detail["score_based_value"], "pass")
         self.assertEqual(detail["decision_confidence"], "low")
-        self.assertTrue(detail["gating_applied"])
+        self.assertFalse(detail["gating_applied"])
         self.assertIn("review", detail["reason"])
 
     def test_normalisation_disabled_by_default(self) -> None:

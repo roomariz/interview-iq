@@ -1,7 +1,9 @@
+import json
 import unittest
 from unittest.mock import patch
 
 from interview_app_backend.services.evaluation_service import evaluate_submission
+from tests.relevance_regression_fixtures import verdict
 
 
 class TestOutOfScopeEvaluation(unittest.TestCase):
@@ -9,8 +11,8 @@ class TestOutOfScopeEvaluation(unittest.TestCase):
         question = "Describe a time you improved system performance under constraints."
         answer = "I documented the rollout plan and coordinated weekly status meetings with the team."
 
-        with patch("interview_app_backend.llm.client.call_llm", return_value="NO") as mock_call, patch(
-            "interview_app_backend.llm.client.get_openrouter_client"
+        with patch("interview_app_backend.llm.client.call_llm", return_value=json.dumps(verdict(question, answer, "off_topic", "behavioural"))) as mock_call, patch(
+            "interview_app_backend.services.evaluation_rules.get_openrouter_client"
         ) as mock_client, patch(
             "interview_app_backend.services.evaluation_service.generate_reference_answer"
         ) as mock_reference, patch(

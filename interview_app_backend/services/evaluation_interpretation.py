@@ -55,24 +55,19 @@ def build_dimension_contradictions(evaluation: Mapping[str, Any], evaluation_con
 
 
 def _score_confidence(evaluation_context: Mapping[str, Any], dimension_contradictions: Mapping[str, list[str]]) -> float:
-    confidence = evaluation_context.get("confidence", {})
+    confidence = dict(evaluation_context.get("confidence", {}))
+    if evaluation_context.get("question_type", "behavioural") != "behavioural":
+        confidence.pop("metrics", None)
     base = sum(confidence.values()) / max(len(confidence), 1)
     penalty = sum(CONTRADICTION_PENALTIES.get(flag, 0.08) for flags in dimension_contradictions.values() for flag in flags)
     penalty += sum(ANOMALY_PENALTIES.get(flag, 0.06) for flag in evaluation_context.get("anomaly_flags", []))
-    reasoning_depth = evaluation_context.get("reasoning_depth")
-    if reasoning_depth in {"none", "implicit"}:
-        penalty += 0.1 if reasoning_depth == "none" else 0.08
-    elif reasoning_depth == "deep":
-        base += 0.05
-    elif reasoning_depth == "explicit":
-        base += 0.02
     return _clamp(base - penalty)
 
 
 def _trust_level(score_confidence: float, severity: str, impact_strength: str) -> str:
-    if severity == "high" or score_confidence < 0.45 or impact_strength == "weak":
+    if severity == "high" or score_confidence < 0.45:
         return "low"
-    if severity == "medium" or score_confidence < 0.78 or impact_strength == "moderate":
+    if severity == "medium" or score_confidence < 0.78:
         return "medium"
     return "high"
 
@@ -139,7 +134,7 @@ def build_validation_warning(evaluation: Mapping[str, Any], evaluation_context: 
     contradiction_flags = _unique(list(evaluation_context.get("contradiction_flags", [])) + [flag for flags in dimension_contradictions.values() for flag in flags])
     severity = "high" if any(flag.endswith("contradiction") for flag in contradiction_flags) or "misleading_metrics" in anomaly_flags else "medium" if anomaly_flags else "low" if contradiction_flags else "info"
     score_confidence = _score_confidence({**evaluation_context, "reasoning_depth": reasoning_depth, "anomaly_flags": anomaly_flags}, dimension_contradictions)
-    trust_level = _trust_level(score_confidence, severity, impact_strength)
+    trust_level = _trust_level(score_confidence, severity, impact_strength if evaluation_context.get("question_type", "behavioural") == "behavioural" else "not_applicable")
     validation_block = {
         "severity": severity,
         "severity_definition": SEVERITY_DEFINITIONS[severity],
@@ -203,19 +198,19 @@ def apply_evaluation_consistency(evaluation: Mapping[str, Any], evaluation_conte
         labels["specificity"] = cleaned[0] if cleaned else ""
         if hits:
             warnings.append("Specificity label contradicted extracted metrics and was normalised.")
-    if not metrics_detected and "specificity" in scores:
+    if evaluation_context.get("question_type", "behavioural") == "behavioural" and not metrics_detected and "specificity" in scores:
         scores["specificity"] = min(int(scores.get("specificity") or 0), 3)
     if evaluation_context.get("has_structure"):
-        cleaned, hits = _normalise_items([str(labels.get("structure", ""))], GENERIC_STRUCTURE_PHRASES, "Clear sections are present, but STAR alignment could be stronger.", "structure_contradiction")
+        cleaned, hits = _normalise_items([str(labels.get("structure", ""))], GENERIC_STRUCTURE_PHRASES, "Clear sections are present.", "structure_contradiction")
         labels["structure"] = cleaned[0] if cleaned else ""
         if hits:
             warnings.append("Structure label contradicted extracted structure and was normalised.")
     dimension_map = (
-        ("metrics", GENERIC_METRIC_PHRASES, "The answer gives strong metrics, but does not clearly explain the decision-making behind each technical choice.", "Keep the existing metrics, but briefly connect them to user or business impact."),
-        ("structure", GENERIC_STRUCTURE_PHRASES, "The answer has structure, but the STAR flow could be clearer.", "Tighten the narrative so challenge, action, and outcome read in sequence."),
-        ("reasoning", GENERIC_REASONING_PHRASES, "The answer shows some reasoning, but it should explain why each choice was made.", "Add one sentence on why this approach was preferred."),
-        ("tradeoffs", GENERIC_TRADEOFF_PHRASES, "The answer mentions constraints, but the trade-offs should be explicit.", "Name the trade-off you accepted and why it was reasonable."),
-        ("alternatives", GENERIC_ALTERNATIVE_PHRASES, "The answer could improve by naming one alternative and why it was rejected.", "Briefly compare one alternative approach."),
+        ("metrics", GENERIC_METRIC_PHRASES, "The answer includes measurable evidence.", "Keep the existing metrics, but briefly connect them to user or business impact."),
+        ("structure", GENERIC_STRUCTURE_PHRASES, "The answer has a structured flow.", "Keep the existing logical sequence."),
+        ("reasoning", GENERIC_REASONING_PHRASES, "The answer includes reasoning.", "Add one sentence on why this approach was preferred."),
+        ("tradeoffs", GENERIC_TRADEOFF_PHRASES, "The answer mentions trade-offs or constraints.", "Name the trade-off you accepted and why it was reasonable."),
+        ("alternatives", GENERIC_ALTERNATIVE_PHRASES, "The answer mentions alternatives.", "Briefly compare one alternative approach."),
     )
     dimension_contradictions = build_dimension_contradictions(data, evaluation_context)
     contradiction_flags = list(evaluation_context.get("contradiction_flags", []))

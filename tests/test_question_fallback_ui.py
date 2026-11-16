@@ -125,7 +125,7 @@ def test_question_screen_does_not_render_duplicate_question_heading():
 
 def test_question_generation_timeout_recovery_uses_backup_question(caplog):
     st.session_state.clear()
-    st.session_state.setup_role = "Backend Engineer"
+    st.session_state.setup_role = st.session_state.role = "Backend Engineer"
     st.session_state.setup_persona = "Friendly"
     st.session_state.setup_difficulty = "Easy"
     st.session_state.setup_response_style = "Concise"
@@ -137,7 +137,7 @@ def test_question_generation_timeout_recovery_uses_backup_question(caplog):
 
     with patch(
         "interview_app_backend.services.question_generation_job.generate_fallback_question",
-        return_value="You are working on a backend team where a recent release caused a regression. How would you investigate and fix it?",
+        return_value="You are working on a backend team using Spring Boot; your application has a regression. How would you investigate and fix it?",
     ), caplog.at_level(logging.WARNING, logger="interview_app_backend.services.question_generation_job"):
         recovered = poll_question_generation(st.session_state)
 
@@ -152,7 +152,7 @@ def test_question_generation_timeout_recovery_uses_backup_question(caplog):
 
 def test_question_generation_failure_recovery_uses_backup_question(caplog):
     st.session_state.clear()
-    st.session_state.setup_role = "Backend Engineer"
+    st.session_state.setup_role = st.session_state.role = "Backend Engineer"
     st.session_state.setup_persona = "Friendly"
     st.session_state.setup_difficulty = "Easy"
     st.session_state.setup_response_style = "Concise"
@@ -166,7 +166,7 @@ def test_question_generation_failure_recovery_uses_backup_question(caplog):
 
     with patch(
         "interview_app_backend.services.question_generation_job.generate_fallback_question",
-        return_value="You are working on a backend team where a recent release caused a regression. How would you investigate and fix it?",
+        return_value="You are working on a backend team using Spring Boot; your application has a regression. How would you investigate and fix it?",
     ), caplog.at_level(logging.WARNING, logger="interview_app_backend.services.question_generation_job"):
         recovered = poll_question_generation(st.session_state)
 
@@ -211,7 +211,7 @@ def test_cancelled_question_generation_stops_before_client_lookup():
 
 def test_question_generation_uses_one_openrouter_model():
     st.session_state.clear()
-    st.session_state.setup_role = "Backend Engineer"
+    st.session_state.setup_role = st.session_state.role = "Backend Engineer"
     st.session_state.setup_persona = "Friendly"
     st.session_state.setup_difficulty = "Easy"
     st.session_state.setup_response_style = "Concise"

@@ -29,7 +29,7 @@ def classify_failure_type(
     topic_match = bool(evaluation_context.get("topic_match", evaluation.get("topic_match", True)))
     if not topic_match or evaluation.get("relevance_gate_applied"):
         return "off_topic"
-    if grounding_score < 0.4 or "classifier_conflict" in anomaly_flags:
+    if any(flag in anomaly_flags for flag in ("fake_metrics", "misleading_metrics")):
         return "hallucination_risk"
     if not evaluation_context.get("has_metrics") and int(scores.get("specificity", 0)) <= 3:
         return "low_specificity"
@@ -48,10 +48,9 @@ def apply_decision_adjustments(
     grounding_score: float,
 ) -> dict[str, Any]:
     data = dict(evaluation)
-    decision = str(data.get("overall_decision", "")).strip() or "borderline pass"
-    severity = str(data.get("validation_warning", {}).get("severity", "")).strip()
-    if grounding_score < 0.4 and decision == "pass" and severity != "high":
-        decision = "borderline pass"
+    from interview_app_backend.services.evaluation_rules import derive_overall_decision
+
+    decision = derive_overall_decision(data["scores"]) if data.get("scores") else str(data.get("overall_decision", "")).strip() or "fail"
     confidence = _confidence_value(evaluation_confidence)
     if str(data.get("failure_type", "")).strip() == "off_topic":
         decision = "fail"
@@ -63,18 +62,23 @@ def apply_decision_adjustments(
         detail = dict(data.get("overall_decision_detail", {}))
         detail["decision_confidence"] = "low"
         detail["gating_applied"] = True
-        if decision == "pass" and severity != "high":
-            decision = "borderline pass"
         data["overall_decision_detail"] = detail
         trust = dict(data.get("trust", {}))
         trust["trust_level"] = "low"
+        trust["trust_definition"] = "Low confidence or strong conflict; treat the result as provisional."
         trust["decision_confidence"] = "low"
         trust["reason"] = "Evaluation confidence is low; read the result cautiously."
         data["trust"] = trust
         warning = dict(data.get("validation_warning", {}))
         warning["trust_level"] = "low"
         warning["interpretation"] = "Some feedback is only partially supported by the answer."
+        validation = dict(warning.get("validation", {}))
+        validation["trust_level"] = "low"
+        warning["validation"] = validation
+        warning.pop("trust", None)
         data["validation_warning"] = warning
+        detail["trust_level"] = "low"
+        data["overall_decision_detail"] = detail
     data["overall_decision"] = decision
     detail = dict(data.get("overall_decision_detail", {}))
     if detail:

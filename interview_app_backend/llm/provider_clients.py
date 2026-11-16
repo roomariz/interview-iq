@@ -8,7 +8,7 @@ from config.settings import GOOGLE_API_KEY, XAI_API_KEY
 
 
 def create_google_client(api_key: str) -> OpenAI:
-    return OpenAI(api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta")
+    return OpenAI(api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
 
 
 def get_google_client() -> OpenAI:

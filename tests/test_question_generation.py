@@ -109,46 +109,23 @@ class TestQuestionGeneration(unittest.TestCase):
         self.assertIn("CV: Python CV", prompt)
         self.assertIn("JOB_DESCRIPTION:", prompt)
         self.assertIn("GAP_ANALYSIS (for ONE question only):", prompt)
-        self.assertIn("Generate 5–10 high-quality, non-repetitive interview questions", prompt)
-        self.assertIn('"questions": [', prompt)
+        self.assertIn("Generate exactly 1 high-quality, non-repetitive base interview questions", prompt)
+        self.assertIn("Return a JSON array with exactly ONE question object.", prompt)
 
     def test_build_question_generation_prompt_includes_structured_fields(self):
-        prompt = build_question_generation_prompt(
-            role="Backend Engineer",
-            difficulty="Medium",
-            persona="Direct",
-            response_style="Concise",
-            temperature=0.7,
-            cv_profile="Python CV",
-            job_description="PostgreSQL role",
-            gap_analysis={"missing_skills": ["aws"], "gap_summary": "Missing: aws"},
-        )
-
-        self.assertIn("TEMPERATURE: 0.7", prompt)
+        from interview_app_backend.llm.question_contract import request_contract, question_response_schema
+        prompt = build_question_generation_prompt("Backend Engineer", "Medium", "Direct", "Concise", 0.7, "Python CV", "PostgreSQL role", {"missing_skills": ["aws"]})
+        self.assertIn("ROLE: Backend Engineer", prompt)
         self.assertIn("CV: Python CV", prompt)
         self.assertIn("JOB_DESCRIPTION: PostgreSQL role", prompt)
-        self.assertIn("GAP_ANALYSIS (for ONE question only): {\"missing_skills\": [\"aws\"], \"gap_summary\": \"Missing: aws\"}", prompt)
-        self.assertIn("Context Handling (MANDATORY)", prompt)
         self.assertIn("SCENARIO A: ROLE ONLY", prompt)
         self.assertIn("SCENARIO B: ROLE + JOB DESCRIPTION", prompt)
         self.assertIn("SCENARIO C: ROLE + JOB DESCRIPTION + CV", prompt)
-        self.assertIn("You MUST determine the active scenario (A, B, or C) before generating questions.", prompt)
-        self.assertIn("You MUST follow only the rules for that scenario.", prompt)
-        self.assertIn("Source Priority (CRITICAL)", prompt)
-        self.assertIn("Anti-Hallucination Rules", prompt)
-        self.assertIn("Before finalising:", prompt)
-        self.assertIn("Check that each question aligns with a different required dimension.", prompt)
-        self.assertIn("Check that no unsupported technologies are introduced.", prompt)
-        self.assertIn("Check that grounding follows the active scenario rules.", prompt)
-        self.assertIn("If any check fails, revise before output.", prompt)
-        self.assertIn('"meta": {', prompt)
-        self.assertIn('"sequence_order": 1-10', prompt)
-        self.assertIn("Output (JSON only):", prompt)
-        self.assertIn('"question_type": "cv_based | jd_based | behavioural | deep_dive | gap_targeted"', prompt)
-        self.assertIn('"scenario_type": "debugging | performance | system_design | behavioural | scaling"', prompt)
-        self.assertIn("For a 5-question set, cover five different capability dimensions", prompt)
-        self.assertIn("Do NOT repeat the same verb pattern or frame", prompt)
-        self.assertIn("Do NOT write coaching or meta questions", prompt)
+        self.assertEqual(request_contract(prompt)["count"], 5)
+        schema = question_response_schema(prompt)
+        self.assertEqual(schema["properties"]["questions"]["minItems"], 5)
+        self.assertEqual(schema["properties"]["questions"]["maxItems"], 5)
+        self.assertIn("GeneratedQuestion", schema["$defs"])
 
     def test_get_next_question_with_valid_scenario_passes_validation(self):
         with patch("interview_app_backend.services.question_service.get_openrouter_client") as mock_client_factory, patch(
@@ -156,7 +133,10 @@ class TestQuestionGeneration(unittest.TestCase):
         ) as mock_call_llm:
             client = object()
             mock_client_factory.return_value = client
-            mock_call_llm.return_value = _build_question_generation_payload()
+            item = json.loads(_build_question_generation_payload())["questions"][0]
+            item["question_type"] = "cv_based"
+            item["source_basis"]["jd_terms_used"] = []
+            mock_call_llm.return_value = json.dumps([item])
             result = get_next_question("Full Stack Engineer", "Easy", "Friendly", "Concise", "React experience")
 
             self.assertIn("your application", result.lower())

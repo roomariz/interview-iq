@@ -17,4 +17,4 @@ class Evaluation:
     feedback: dict[str, object] = field(default_factory=dict)
     reasoning: dict[str, str] = field(default_factory=dict)
     follow_up: dict[str, str] = field(default_factory=dict)
-    example_answer: dict[str, str] = field(default_factory=dict)
+    example_answer: str = ""

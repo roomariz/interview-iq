@@ -72,7 +72,7 @@ class TestSemanticSimilarityEvaluation(unittest.TestCase):
                 semantic_similarity_score=0.82,
             )
 
-        prompt = mock_call.call_args.args[0]
+        prompt = mock_call.call_args_list[0].args[0]
         self.assertIn("Reference answer:", prompt)
         self.assertIn("Semantic similarity score: 0.82", prompt)
         self.assertIn("Question:\nQuestion text.", prompt)
@@ -80,7 +80,7 @@ class TestSemanticSimilarityEvaluation(unittest.TestCase):
         self.assertIn("Evaluation context:", prompt)
         self.assertIn('"has_metrics": true', prompt.lower())
         self.assertIn("Scoring rules:", prompt)
-        self.assertIn("Specificity rubric:", prompt)
+        self.assertIn("Specificity rubric for behavioural examples requesting outcome evidence:", prompt)
         self.assertIn("Structure rubric:", prompt)
         self.assertIn("Problem-solving rubric:", prompt)
         self.assertIn("Similarity (supporting only):", prompt)
@@ -162,7 +162,7 @@ class TestSemanticSimilarityEvaluation(unittest.TestCase):
         ), patch("interview_app_backend.services.evaluation_service.is_answer_relevant", return_value=True), self.assertLogs("interview_app_backend.services.evaluation_rules", level="WARNING") as captured:
             result = evaluate_answer("Describe a time you improved system performance under constraints.", answer)
 
-        prompt = mock_call.call_args.args[0]
+        prompt = mock_call.call_args_list[0].args[0]
         self.assertIn("Evaluation context:", prompt)
         self.assertIn('"has_metrics": true', prompt.lower())
         self.assertIn("Metrics are present, but could be tied more clearly to business or user impact.", prompt)
@@ -178,15 +178,17 @@ class TestSemanticSimilarityEvaluation(unittest.TestCase):
         self.assertIn("grouped_anomaly_flags", result["validation_warning"])
         self.assertIn("flags affect interpretation", result["validation_warning"]["interpretation"])
         self.assertIn("validation", result["validation_warning"])
-        self.assertIn("trust", result["validation_warning"])
+        self.assertNotIn("trust", result["validation_warning"])
+        self.assertIn("trust", result)
         self.assertIn("reasoning", result["validation_warning"])
         self.assertEqual(result["evaluation_version"], "trust-v4")
         self.assertTrue(result["evaluation_trace"])
         self.assertGreaterEqual(result["score_confidence"], 0)
         self.assertIn("ambiguous_metrics", result["validation_warning"]["anomaly_flags"])
         self.assertNotIn("Missing specific metrics for improvement", " | ".join(result["feedback"]["key_issues"]))
-        self.assertIn("decision-making behind each technical choice", " | ".join(result["feedback"]["key_issues"]))
-        self.assertIn("Keep the existing metrics", " | ".join(result["feedback"]["improvements"]))
+        self.assertEqual(result["feedback"]["key_issues"], [])
+        self.assertEqual(result["feedback"]["improvements"], [])
+        self.assertEqual(result["feedback_validation"]["status"], "withheld_claims")
         self.assertTrue(result.get("validation_warnings"))
         self.assertTrue(any("normalised" in message.lower() for message in captured.output))
         mock_client.assert_called_once()
@@ -204,6 +206,7 @@ class TestSemanticSimilarityEvaluation(unittest.TestCase):
                 "answer": st.session_state.answer.strip(),
                 "reference_answer": "Model answer.",
                 "semantic_similarity_score": 0.91,
+                "scores": dict.fromkeys(("relevance", "structure", "specificity", "communication", "problem_solving_approach"), 7),
             },
         ):
             submit_answer()
@@ -214,7 +217,7 @@ class TestSemanticSimilarityEvaluation(unittest.TestCase):
         self.assertEqual(st.session_state.feedback["semantic_similarity_score"], 0.91)
 
     def test_evaluate_submission_combines_generated_fields(self) -> None:
-        with patch(
+        with patch("interview_app_backend.services.evaluation_pipeline.is_free_model", return_value=False), patch(
             "interview_app_backend.services.evaluation_service.generate_reference_answer",
             return_value="Reference answer.",
         ), patch(
