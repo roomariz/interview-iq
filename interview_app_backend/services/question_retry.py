@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+from interview_app_backend.llm.deadline import check
+
 from interview_app_backend.llm.question_contract import (
     QuestionValidationError, contract_header, distribution_for, validate_question_response,
 )
@@ -29,6 +31,7 @@ def _generate_with_retry(
     attempt_prompt = base_prompt
     strict = service._question_strict_json()
     for attempt in range(retries + 1):
+        check()
         if should_abort and should_abort():
             raise RuntimeError("cancelled")
         try:

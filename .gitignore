@@ -19,6 +19,7 @@ venv/
 !.env.example
 115.md
 .codex/
+.vercel/
 .streamlit/
 .vscode/
 .gstack/

@@ -42,15 +42,18 @@ class InterviewAPIClient:
             raise BackendError("The remote backend requires HTTPS.")
         self.timeout = float(timeout if timeout is not None else _setting("BACKEND_API_TIMEOUT", "180"))
         self.transport = transport
+        self.preview_bypass = _setting("VERCEL_AUTOMATION_BYPASS_SECRET")
 
     def _post(self, path: str, payload: BaseModel, response: type[Response]) -> Response:
         if not self.secret:
             raise BackendError("The interview service connection is not configured.")
+        headers = {"Authorization": f"Bearer {self.secret}"}
+        if self.preview_bypass:
+            headers["x-vercel-protection-bypass"] = self.preview_bypass
         try:
             with httpx.Client(base_url=self.base_url, timeout=httpx.Timeout(self.timeout, connect=5),
                               transport=self.transport, follow_redirects=False, trust_env=False) as client:
-                result = client.post(path, json=payload.model_dump(),
-                                     headers={"Authorization": f"Bearer {self.secret}"})
+                result = client.post(path, json=payload.model_dump(), headers=headers)
             if result.status_code != 200:
                 messages = {
                     401: "The interview service connection is not authorised.",

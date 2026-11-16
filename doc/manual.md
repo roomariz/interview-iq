@@ -200,3 +200,13 @@ A provisional assessment keeps the score-based performance verdict. Confidence
 and candidate performance are separate signals. Supported coaching stays visible
 at low confidence; missing coaching receives one feedback-only repair attempt.
 Follow-ups probe an actual answer decision without repeating the whole question.
+
+## Phase 3A service limits
+
+Interview requests now share a configurable deadline. Expiry shows a retry message
+without recording scores. Quota-limited services ask you to wait. Screens and
+session ownership remain unchanged. See [production readiness](phase3a-readiness.md).
+
+## Cloud test preparation
+
+See [Phase 3B proposal](phase3b-proposal.md) and [free Redis setup](phase3b-upstash-setup.md). Real Redis verification passed; Git publication and Preview deployment await approval.

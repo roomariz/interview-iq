@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "regions": ["fra1"],
+  "git": {
+    "deploymentEnabled": false
+  },
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 300,
+      "excludeFiles": "{.venv/**,venv/**,.env,.env.*,tests/**,doc/**,agents/**,.agents/**,.codex/**,.git/**,.pytest_cache/**,.ruff_cache/**,interview_app_frontend/**,deployment/**,app.py,**/__pycache__/**,**/*.log}"
+    }
+  }
+}
