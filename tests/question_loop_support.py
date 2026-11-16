@@ -12,7 +12,7 @@ from unittest.mock import MagicMock  # noqa: F401
 import interview_app_frontend.app as app_module  # noqa: F401
 from interview_app_frontend.app import main  # noqa: F401
 from interview_app_frontend.components.shell import SETUP_WIDGET_KEYS  # noqa: F401
-from interview_app_backend.services.question_generation_job import poll_question_generation  # noqa: F401
+from interview_app_frontend.state.question_generation_job import poll_question_generation  # noqa: F401
 from interview_app_frontend.components.answer_evaluation_screen import render_answer_evaluation  # noqa: F401
 from interview_app_frontend.components.question_screen import render_question_and_answer  # noqa: F401
 from interview_app_frontend.state.session_manager import start_interview  # noqa: F401

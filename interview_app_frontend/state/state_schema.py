@@ -1,4 +1,8 @@
 DEFAULT_SESSION_STATE = {
+    "backend_free_mode": False,
+    "backend_question_list_count": 1,
+    "backend_model": "",
+    "backend_provider": "backend",
     "current_screen": "welcome",
     "has_active_session": False,
     "launch_question_view": False,

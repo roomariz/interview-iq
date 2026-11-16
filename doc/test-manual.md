@@ -2,7 +2,7 @@
 
 ## Manual Checks
 
-1. Run `streamlit run app.py`.
+1. Follow [Phase 2 local setup](phase2-integration.md): start FastAPI on port 8000 and Streamlit separately, with matching server secrets and `BACKEND_API_URL`.
 2. Confirm the welcome heading and browser tab title both show InterviewIQ.
 3. Click `Start Setup`; confirm the setup screen appears and its left panel shows InterviewIQ aligned left beside the logo.
 4. Toggle `st.session_state.has_active_session` to `True` and refresh the app.
@@ -226,3 +226,17 @@ verdict and shows provisional status. At 0.75, a clean assessment has medium tru
 and no hallucination classification. Check supported coaching remains visible,
 unsupported advice has a recorded reason, and rollback/disable follow-ups are short.
 Criteria must match the question type. Failed coaching repair must not alter scores.
+
+## Phase 2 HTTP verification
+
+Run `.venv/Scripts/python.exe -m pytest tests/test_phase2_api.py tests/test_phase2_client.py tests/test_phase2_workflow.py tests/test_phase2_llm_integration.py tests/test_phase2_local_streamlit.py -q`.
+These tests mock providers; the local Streamlit test uses a real Uvicorn loopback server.
+See [results and known baseline failures](phase2-test-results.md).
+Complete an interview with a mocked backend: setup, question, answer, feedback,
+next question and summary. Check provider metadata and follow-up remain visible.
+Try an invalid answer and oversized CV; neither should produce scores.
+Stop FastAPI and retry setup: a friendly connection error must appear.
+Change the frontend secret: setup must fail without exposing credentials.
+Open two browser sessions: answers, context and adaptation must remain independent.
+Check `/docs` for schemas and authentication; health remains unauthenticated.
+Do not use real providers for manual checks without explicit permission.

@@ -105,7 +105,7 @@ def prioritise_strengths(view_model: Mapping[str, Any]) -> list[str]:
 
 
 def build_follow_up(view_model: Mapping[str, Any]) -> dict[str, str]:
-    from interview_app_backend.services.question_followup import question_bound_followup
+    from shared.question_followup import question_bound_followup
 
     follow_up = dict(view_model.get("follow_up", {}))
     if follow_up.get("context_note", "").startswith("Original question:"):

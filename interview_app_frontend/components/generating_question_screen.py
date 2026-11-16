@@ -4,8 +4,8 @@ from typing import Any
 
 import streamlit as st
 
-from interview_app_backend.services.question_generation_job import begin_question_generation
-from interview_app_backend.services.question_generation_job import poll_question_generation
+from interview_app_frontend.state.question_generation_job import begin_question_generation
+from interview_app_frontend.state.question_generation_job import poll_question_generation
 from interview_app_frontend.components.sidebar import render_interview_sidebar
 from interview_app_frontend.components.topbar import render_shared_topbar
 from interview_app_frontend.state.session_manager import exit_session

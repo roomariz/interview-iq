@@ -1,8 +1,8 @@
-from interview_app_backend.services.feedback_integrity import example_text, memory_is_allowed
+from shared.feedback_guards import example_text, memory_is_allowed
 from collections.abc import Mapping
 from typing import Any
 
-from interview_app_backend.services.trust_defaults import build_fallback_review_state
+from shared.trust_defaults import build_fallback_review_state
 
 
 FEEDBACK_DIMENSIONS = (

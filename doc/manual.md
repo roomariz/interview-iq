@@ -2,12 +2,12 @@
 
 ## Overview
 
-The app now uses a layered structure with Streamlit screens in `frontend/` and business logic isolated in `backend/`.
+Streamlit now communicates with FastAPI over authenticated HTTP. Interview state stays in Streamlit; the screens, scores and provider choices are preserved. See [Phase 2 setup](phase2-integration.md) for both service commands and server-side secrets.
 
 ## How To Use
 
 1. Install dependencies with `pip install -r requirements.txt`.
-2. Launch the app with `streamlit run app.py`.
+2. Configure the same `BACKEND_API_SECRET` for both servers, start `uvicorn api.index:app --port 8000`, then launch `streamlit run app.py` with `BACKEND_API_URL=http://127.0.0.1:8000`.
 3. Start on the InterviewIQ welcome screen and select `Start Setup` to move to the setup screen; its left panel shows InterviewIQ aligned left beside the logo.
 
 ## What You Will See
@@ -23,7 +23,7 @@ The app now uses a layered structure with Streamlit screens in `frontend/` and b
   - Question generation uses that chain first and can fall back to `openai/gpt-5-nano` as a reliability safety net.
   - Evaluation uses the same free ranking. If every evaluation model fails, the existing error flow asks you to retry without assigning placeholder scores.
   - The shared settings module now also reads optional `GOOGLE_API_KEY` and `XAI_API_KEY` entries from the repo `.env`, which keeps the backend client import stable even when those keys are unset.
-- The app now logs the resolved OpenRouter model at startup so you can confirm which model Streamlit is using.
+- FastAPI resolves the provider and model. Streamlit receives safe model metadata after setup; provider keys belong only on the backend.
 - The question-generation log now includes the provider and model that produced the current questionnaire, and the question screen shows that source in a small status line.
 - OpenRouter request logs now use a structured `status=... task=... provider=... model=...` format, so you can see which provider answered question generation, evaluation, and related LLM steps, but the Request Log itself stays hidden on the preparing and question screens.
 - If the LLM returns no text, the app now logs `llm_empty_output` with the provider, model, and output length to make silent failures easier to trace.

@@ -21,3 +21,25 @@ def block_external_network():
     # Keep the guard until process exit, including background worker shutdown.
     socket.socket.connect = guarded(original_connect)
     socket.socket.connect_ex = guarded(original_connect_ex)
+
+
+@pytest.fixture(autouse=True)
+def mock_setup_http_boundary_for_existing_unit_tests(request, monkeypatch):
+    """Setup unit tests now mock the HTTP boundary; their assertions are unchanged."""
+    from tests.phase2_legacy_support import LEGACY_UI_TESTS, configure_http_double
+    if request.node.name in LEGACY_UI_TESTS:
+        configure_http_double(request, monkeypatch)
+        return
+    if request.module.__name__ not in {"test_session_manager", "tests.test_session_manager"}:
+        return
+    if not request.node.name.startswith("test_start_interview"):
+        return
+    from unittest.mock import Mock
+    from api.interview import context
+    from shared.api_contracts import ContextRequest
+    from interview_app_frontend.state import session_manager
+
+    client = Mock()
+    client.context.side_effect = lambda **kwargs: context(ContextRequest(**kwargs)).model_dump()
+    monkeypatch.setattr(session_manager, "InterviewAPIClient", lambda: client)
+    monkeypatch.setattr(session_manager, "begin_question_generation", lambda state: None)

@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-from config.settings import LLM_PROVIDER, MODEL_NAME
+from interview_app_frontend.services.settings import LLM_PROVIDER, MODEL_NAME
 from interview_app_frontend.components.shell import SETUP_WIDGET_KEYS
 from interview_app_frontend.ui.screens import render_screen
 from interview_app_frontend.state.session_manager import ensure_session_state

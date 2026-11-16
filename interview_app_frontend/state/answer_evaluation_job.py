@@ -5,7 +5,8 @@ from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as Futur
 from time import time
 from typing import Any, Callable
 
-from config.settings import MODEL_NAME
+from interview_app_frontend.services.settings import MODEL_NAME
+from interview_app_frontend.services.api_client import InterviewAPIClient, evaluate_submission, BackendError
 from interview_app_frontend.utils.request_log import log_request
 from interview_app_frontend.utils.request_log import update_pending_request
 
@@ -16,7 +17,7 @@ ANSWER_EVALUATION_ERROR = "answer_evaluation_error"
 ANSWER_EVALUATION_NOTICE = "answer_evaluation_notice"
 
 LOGGER = logging.getLogger(__name__)
-_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="answer-evaluation")
+_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="answer-evaluation")
 
 
 def reset_answer_evaluation_state(state: Any) -> None:
@@ -30,11 +31,13 @@ def begin_answer_evaluation(state: Any, question: str, answer: str, evaluator: C
     reset_answer_evaluation_state(state)
     state[ANSWER_EVALUATION_STARTED_AT] = time()
     state[ANSWER_EVALUATION_NOTICE] = "Evaluating your answer now. We are checking relevance, evidence, and scoring."
+    if evaluator is evaluate_submission:
+        evaluator = InterviewAPIClient().evaluate
     state[ANSWER_EVALUATION_FUTURE] = _EXECUTOR.submit(evaluator, question, answer)
     log_request(
         task="answer_evaluation",
-        provider="open-router",
-        model=MODEL_NAME,
+        provider=state.get("backend_provider", "backend"),
+        model=state.get("backend_model", MODEL_NAME),
         status="running",
     )
 
@@ -48,20 +51,21 @@ def consume_answer_evaluation(state: Any, timeout: float = 0.0) -> dict[str, Any
     except FutureTimeoutError:
         return None
     except Exception as exc:
-        LOGGER.exception("Answer evaluation failed")
+        LOGGER.warning("Answer evaluation request failed")
         started_at = float(state.get(ANSWER_EVALUATION_STARTED_AT) or time())
-        state[ANSWER_EVALUATION_ERROR] = str(exc)
+        message = str(exc) if isinstance(exc, BackendError) else "Evaluation unavailable. Please try again."
+        state[ANSWER_EVALUATION_ERROR] = message
         state[ANSWER_EVALUATION_FUTURE] = None
         state[ANSWER_EVALUATION_NOTICE] = ""
         update_pending_request(
             task="answer_evaluation",
             status="failed",
-            error=str(exc),
-            provider="open-router",
-            model=MODEL_NAME,
+            error=message,
+            provider=state.get("backend_provider", "backend"),
+            model=state.get("backend_model", MODEL_NAME),
             latency_ms=int((time() - started_at) * 1000),
         )
-        return {"error": str(exc)}
+        return {"error": message}
 
     started_at = float(state.get(ANSWER_EVALUATION_STARTED_AT) or time())
     state[ANSWER_EVALUATION_FUTURE] = None
@@ -71,8 +75,8 @@ def consume_answer_evaluation(state: Any, timeout: float = 0.0) -> dict[str, Any
             task="answer_evaluation",
             status="failed",
             error=str(result.get("error", "")),
-            provider="open-router",
-            model=MODEL_NAME,
+            provider=state.get("backend_provider", "backend"),
+            model=state.get("backend_model", MODEL_NAME),
             latency_ms=int((time() - started_at) * 1000),
         )
         return result
@@ -80,8 +84,8 @@ def consume_answer_evaluation(state: Any, timeout: float = 0.0) -> dict[str, Any
     update_pending_request(
         task="answer_evaluation",
         status="completed",
-        provider="open-router",
-        model=MODEL_NAME,
+        provider=state.get("backend_provider", "backend"),
+        model=state.get("backend_model", MODEL_NAME),
         latency_ms=int((time() - started_at) * 1000),
     )
     return result if isinstance(result, dict) else {}

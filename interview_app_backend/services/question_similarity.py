@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from interview_app_backend.services import question_service as service
+from shared.question_topics import _topic_tokens, derive_question_topics, normalise_topic, extract_topic  # noqa: F401
 
 
 def _is_similar_to_previous(question: str, previous_questions: list[str] | None) -> bool:
@@ -77,22 +78,3 @@ def _avoid_topics_line(asked_topics: list[str]) -> str:
     if not topics:
         return ""
     return "Avoid repeating these topics: " + ", ".join(topics) + "\n"
-
-
-def _topic_tokens(text: str) -> list[str]:
-    cleaned = text.lower().replace("?", " ").replace(",", " ").replace("/", " ")
-    return [token for token in cleaned.split() if len(token) > 3]
-
-
-def derive_question_topics(question: str) -> list[str]:
-    return list(dict.fromkeys(service._topic_tokens(question)))
-
-
-def normalise_topic(topic: str) -> str:
-    return str(topic).lower().strip()
-
-
-def extract_topic(question: str) -> str:
-    topics = service.derive_question_topics(question)
-    return service.normalise_topic(" ".join(topics[:3]))
-

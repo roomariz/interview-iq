@@ -2,7 +2,7 @@
 
 ## Scope
 
-The repository now separates frontend, backend, shared, and config concerns. CI pins Ubuntu 24.04 for compatibility with Playwright 1.53.x; avoid `ubuntu-latest` until Playwright supports the newer runner.
+Phase 2 separates Streamlit and FastAPI through authenticated HTTP; see [contracts, local setup and Vercel review](phase2-integration.md), [file inventory](phase2-files.md) and [test results](phase2-test-results.md). CI pins Ubuntu 24.04 for Playwright 1.53.x.
 
 ## Files
 
@@ -15,12 +15,12 @@ The repository now separates frontend, backend, shared, and config concerns. CI 
 - `interview_app_frontend/components/answer_evaluation_screen.py`: locked evaluation screen that polls the background answer-evaluation job.
 - `interview_app_frontend/components/feedback_screen.py`: feedback screen renderer for the diagnostic view, collapsible question and submitted-answer sections, and report download.
 - `interview_app_frontend/components/sample_answer_screen.py`: improved-answer learning reference screen.
-- `interview_app_frontend/state/session_manager.py`: session state initialisation.
+- `interview_app_frontend/state/session_manager.py`: HTTP setup, submission and session initialisation; pure helpers, feedback storage and navigation are split into neighbouring modules.
 - `interview_app_frontend/state/answer_evaluation_job.py`: background answer-evaluation job helper and polling state.
-- `interview_app_backend/llm/prompts/question_generation.py`: structured question prompt template, inferred tech stack helpers, and question-type resolution.
+- `interview_app_backend/llm/prompts/question_generation.py`: unchanged question prompt builder; pure context helpers are shared through `shared/interview_context.py`.
 - `interview_app_backend/services/question_sequence.py`: internal question-plan selection, context resolution, and previous-question tracking.
-- `interview_app_backend/services/question_generation_job.py`: background first-question generation job with tokenised session-state polling.
-- `interview_app_backend/services/`: business-logic placeholders.
+- `interview_app_frontend/state/question_generation_job.py`: HTTP workers receive copied context; session futures and polling stay in Streamlit. Legacy backend jobs remain for compatibility tests.
+- `api/interview.py`: stateless context, question, evaluation and example-answer adapters to existing backend services; bearer authentication, bounded requests and local abuse controls protect each operation.
 - `interview_app_backend/llm/`: LLM client, parser, and prompts.
 - `interview_app_backend/llm/prompt_contract.py`: prompt-contract JSON normaliser for the evaluator output.
 - `interview_app_backend/models/evaluation.py`: evaluation shape and core scoring dimensions.
