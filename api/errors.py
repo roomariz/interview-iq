@@ -8,6 +8,7 @@ from openai import APITimeoutError, RateLimitError
 from requests.exceptions import Timeout as RequestsTimeout
 
 from api.security import error_response
+from interview_app_backend.llm.deadline import check
 
 
 def provider_error(exc):
@@ -29,7 +30,9 @@ class SafeRoute(APIRoute):
 
         async def safe_handler(request):
             try:
-                return await handler(request)
+                result = await handler(request)
+                check()
+                return result
             except (HTTPException, ValidationError):
                 raise
             except Exception as exc:

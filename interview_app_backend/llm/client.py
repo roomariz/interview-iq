@@ -1,3 +1,4 @@
+from interview_app_backend.llm.deadline import check, remaining, pause, provider_call, DeadlineExceeded
 import time
 from collections.abc import Callable
 
@@ -42,7 +43,7 @@ MAX_TOTAL_CALL_SECONDS = 12
 RETRY_BACKOFF_BASE_SECONDS = 2
 
 def create_openrouter_client(api_key: str) -> OpenAI:
-    return OpenAI(
+    client = OpenAI(
         api_key=api_key,
         base_url="https://openrouter.ai/api/v1",
         default_headers={
@@ -50,6 +51,8 @@ def create_openrouter_client(api_key: str) -> OpenAI:
             "X-OpenRouter-Title": APP_TITLE,
         },
     )
+    client.max_retries = 0
+    return client
 
 def get_openrouter_client() -> OpenAI | OllamaCloudClient:
     """Legacy service factory; honours the configured LLM provider."""
@@ -78,6 +81,7 @@ def call_llm(
     should_abort: Callable[[], bool] | None = None,
     max_models_per_provider: int = MAX_MODELS_PER_PROVIDER,
 ) -> str:
+    check()
     if settings.LLM_PROVIDER in {"grok", "google"}:
         provider = settings.LLM_PROVIDER
     if isinstance(client, OllamaCloudClient) or provider == "ollama":
@@ -86,7 +90,10 @@ def call_llm(
             output = ollama_client.call(prompt, temperature, task, should_abort)
             _set_last_llm_call_metadata(status="success", task=_normalise_task_name(task),
                                         provider="ollama", model=ollama_client.model)
+            check()
             return output
+        except DeadlineExceeded:
+            raise
         except RuntimeError as exc:
             _set_last_llm_call_metadata(status="failure", task=_normalise_task_name(task),
                                         provider="ollama", model=ollama_client.model)
@@ -111,25 +118,22 @@ def call_llm(
             raise RuntimeError("cancelled")
         provider = _extract_provider(model)
         for attempt in range(1, MAX_ATTEMPTS_PER_MODEL + 1):
+            check()
             elapsed_seconds = time.monotonic() - call_started_at
             if elapsed_seconds >= MAX_TOTAL_CALL_SECONDS:
                 break
             try:
-                request_kwargs = {"model": model, "input": prompt, "timeout": LLM_TIMEOUT}
+                request_kwargs = {"model": model, "input": prompt, "timeout": remaining(LLM_TIMEOUT)}
                 if provider == "grok":
                     request_kwargs["store"] = False
                 if temperature is not None:
                     request_kwargs["temperature"] = temperature
-                LOGGER.info(
-                    "LLM_REQUEST",
-                    extra={
-                        "task": task_name,
-                        "provider": provider,
-                        "model": model,
-                        "attempt": attempt,
-                    }
+                LOGGER.info("LLM_REQUEST", extra={"task": task_name, "provider": provider,
+                                                  "model": model, "attempt": attempt})
+                response = provider_call(
+                    lambda request=request_kwargs: call_google_chat(client, request, task_name) if use_google_chat else client.responses.create(**request),
+                    request_kwargs["timeout"],
                 )
-                response = call_google_chat(client, request_kwargs, task_name) if use_google_chat else client.responses.create(**request_kwargs)
                 output_text = _extract_output_text(response, provider=provider, model=model)
                 if _task_requires_json(task_name):
                     try:
@@ -166,6 +170,8 @@ def call_llm(
                     }
                 )
                 return output_text
+            except DeadlineExceeded:
+                raise
             except (APITimeoutError, RateLimitError, APIError, RuntimeError, Exception) as exc:
                 last_error = exc
                 elapsed_seconds = time.monotonic() - call_started_at
@@ -189,7 +195,7 @@ def call_llm(
                             "provider": provider,
                             "model": model,
                             "attempt": attempt,
-                            "error": str(exc),
+                            "error": type(exc).__name__,
                         }
                     )
 
@@ -222,7 +228,7 @@ def call_llm(
                                 "sleep_seconds": sleep_seconds,
                             }
                         )
-                        time.sleep(sleep_seconds)
+                        pause(sleep_seconds)
                     continue
                 _set_last_llm_call_metadata(status="failure", task=task_name, provider=provider, model=model, attempt=attempt)
                 break
@@ -237,12 +243,6 @@ def call_llm(
                 }
             )
     _set_last_llm_call_metadata(status="failure", task=task_name, provider=_extract_provider(models_to_try[-1]), model=models_to_try[-1])
-    LOGGER.warning(
-        "LLM_FAILURE_FINAL",
-        extra={
-            "task": task_name,
-            "model": models_to_try[-1],
-            "reason": "all_retries_failed",
-        }
-    )
+    LOGGER.warning("LLM_FAILURE_FINAL", extra={"task": task_name, "model": models_to_try[-1],
+                                               "reason": "all_retries_failed"})
     raise RuntimeError("We encountered an issue. Please try again in a few moments.") from last_error

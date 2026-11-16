@@ -1,9 +1,13 @@
-"""Bounded requests and instance-local abuse controls; no interview storage."""
+"""Bounded requests and shared production quotas; no interview storage."""
 
 import hmac
 import os
-from collections import deque
+import asyncio
 from time import monotonic
+
+from api.configuration import BackendConfig
+from api.rate_limit import RateLimiter
+from interview_app_backend.llm.deadline import Deadline, current_deadline
 
 from starlette.responses import JSONResponse
 
@@ -12,18 +16,42 @@ MAX_REQUEST_BYTES = 131072
 
 def error_response(status: int, code: str, message: str, headers=None):
     return JSONResponse({"error": {"code": code, "message": message}},
-                        status_code=status, headers=headers)
+                        status_code=status, headers={"Cache-Control": "no-store", **(headers or {})})
 
 
 class InterviewSecurity:
     def __init__(self, app):
         self.app = app
-        self.arrivals = deque()
+        self.limiter = RateLimiter()
         self.active = 0
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or not scope["path"].startswith("/api/interview/"):
             return await self.app(scope, receive, send)
+        try:
+            config = BackendConfig.load()
+        except (ValueError, TypeError):
+            return await error_response(503, "configuration", "Interview service is not configured.")(scope, receive, send)
+        deadline = Deadline(monotonic() + config.deadline)
+        token = current_deadline.set(deadline)
+        response_started = False
+
+        async def tracked_send(message):
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await asyncio.wait_for(self.handle(scope, receive, tracked_send, config), deadline.remaining())
+        except TimeoutError:
+            if not response_started:
+                await error_response(504, "timeout", "The provider took too long. Please try again.")(scope, receive, send)
+        finally:
+            deadline.cancelled.set()
+            current_deadline.reset(token)
+
+    async def handle(self, scope, receive, send, config):
         headers = dict(scope["headers"])
         secret = os.getenv("BACKEND_API_SECRET", "")
         supplied = headers.get(b"authorization", b"")
@@ -32,13 +60,15 @@ class InterviewSecurity:
         if not hmac.compare_digest(supplied, f"Bearer {secret}".encode()):
             return await error_response(401, "unauthorised", "Backend authentication failed.",
                                         {"WWW-Authenticate": "Bearer"})(scope, receive, send)
-        now = monotonic()
-        while self.arrivals and now - self.arrivals[0] >= 60:
-            self.arrivals.popleft()
-        if len(self.arrivals) >= int(os.getenv("BACKEND_RATE_LIMIT", "30")):
+        try:
+            retry = await self.limiter.retry_after(config, secret)
+        except Exception:
+            return await error_response(503, "rate_service", "Interview service is temporarily unavailable.",
+                                        {"Retry-After": "5"})(scope, receive, send)
+        if retry:
             return await error_response(429, "rate_limit", "Please wait before trying again.",
-                                        {"Retry-After": "60"})(scope, receive, send)
-        if self.active >= int(os.getenv("BACKEND_MAX_CONCURRENT", "4")):
+                                        {"Retry-After": str(retry)})(scope, receive, send)
+        if self.active >= config.max_concurrent:
             return await error_response(503, "busy", "Interview service is busy. Please try again.",
                                         {"Retry-After": "5"})(scope, receive, send)
         if headers.get(b"content-encoding", b"identity") != b"identity":
@@ -61,7 +91,9 @@ class InterviewSecurity:
             body.extend(chunk)
             if not message.get("more_body", False):
                 break
-        self.arrivals.append(now)
+        if self.active >= config.max_concurrent:
+            return await error_response(503, "busy", "Interview service is busy. Please try again.",
+                                        {"Retry-After": "5"})(scope, receive, send)
         self.active += 1
         delivered = False
 

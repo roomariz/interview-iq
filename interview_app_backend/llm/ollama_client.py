@@ -1,7 +1,9 @@
 """Ollama's documented cloud HTTP API, without a local Ollama dependency."""
 
 import json
-import time
+import time  # noqa: F401 - retained for existing transport test doubles
+
+from interview_app_backend.llm.deadline import check, remaining, pause, provider_call
 from collections.abc import Callable
 
 import requests
@@ -71,19 +73,21 @@ class OllamaCloudClient:
             body["options"] = {"temperature": temperature}
         # Cloud does not support `format`/schema-constrained output.
         for attempt in range(1, MAX_ATTEMPTS + 1):
+            check()
             if should_abort and should_abort():
                 raise RuntimeError("cancelled")
             failure = "invalid_response"
             retryable = True
             validation_error = None
             try:
-                response = requests.post(
+                timeout = remaining(settings.LLM_TIMEOUT)
+                response = provider_call(lambda: requests.post(
                     "https://ollama.com/api/chat",
                     headers={"Authorization": f"Bearer {settings.OLLAMA_API_KEY}"},
                     json=body,
-                    timeout=settings.LLM_TIMEOUT,
+                    timeout=timeout,
                     allow_redirects=False,
-                )
+                ), timeout)
                 if response.status_code != 200:
                     status = response.status_code
                     failure = {401: "authentication_failed", 403: "authentication_failed", 429: "rate_limited"}.get(status, f"http_{status}")
@@ -99,8 +103,10 @@ class OllamaCloudClient:
                     _validate_output(text, task_name, prompt)
                     LOGGER.info("LLM_SUCCESS", extra={"provider": "ollama", "model": self.model, "task": task_name, "attempt": attempt})
                     return text.strip()
-            except requests.Timeout:
+            except (requests.Timeout, TimeoutError) as exc:
+                check()
                 failure = "timeout"
+                validation_error = exc
             except requests.RequestException:
                 failure = "connection_failed"
             except (ValueError, TypeError, ValidationError) as exc:
@@ -109,5 +115,5 @@ class OllamaCloudClient:
             LOGGER.warning("OLLAMA_FAILURE", extra={"reason": failure, "attempt": attempt, "task": task_name})
             if not retryable or attempt == MAX_ATTEMPTS:
                 raise RuntimeError(f"Ollama Cloud request failed ({failure}). Please check configuration or try again.") from validation_error
-            time.sleep(2 ** (attempt - 1))
+            pause(2 ** (attempt - 1))
         raise RuntimeError("Ollama Cloud request failed")  # pragma: no cover

@@ -43,8 +43,11 @@ FALLBACK_CHAIN = [
     "openai/gpt-5-nano",
 ]
 ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
-load_dotenv(dotenv_path=ENV_PATH, override=False)
-ENV_VALUES = dotenv_values(ENV_PATH)
+if os.getenv("APP_ENV") in {"production", "test"} or os.getenv("VERCEL"):
+    ENV_VALUES = {}
+else:
+    load_dotenv(dotenv_path=ENV_PATH, override=False)
+    ENV_VALUES = dotenv_values(ENV_PATH)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", ENV_VALUES.get("OPENROUTER_API_KEY", "")).strip()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", ENV_VALUES.get("GOOGLE_API_KEY", "")).strip()
 XAI_API_KEY = os.getenv("XAI_API_KEY", ENV_VALUES.get("XAI_API_KEY", "")).strip()

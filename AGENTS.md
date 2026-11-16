@@ -169,6 +169,12 @@ PRD → Architecture → Features → Mockups
 | 2026-11-16 | UX | Use InterviewIQ as the displayed app name, browser title and setup left-panel brand; align the text left beside the logo | User branding correction |
 | 2026-11-16 | architecture | Phase 2 HTTP separation: keep Streamlit session ownership, screens, scoring and providers; authenticate API requests, mock live providers in tests, no database or deployment | User Phase 2 scope |
 
+| 2026-11-16 | architecture | Phase 3A: aggregate deadlines, distributed quotas and backend-only Vercel preparation; preserve scoring/frontend/providers, mock LLMs, no deployment | User production-readiness scope |
+
+| 2026-11-16 | architecture | Phase 3B uses the intentionally public roomariz/interview-iq repo; preserve visibility/features, require verified real free Upstash before Preview, stop for manual setup, no Production release | Explicit user clarification |
+
+| 2026-11-16 | architecture | Prepare reviewed Phase 3A/3B local commit on codex/phase3b-preview; Frankfurt Redis/Vercel region; no push, cloud mutation, paid service or live LLM calls before approval | User Git publication scope |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 

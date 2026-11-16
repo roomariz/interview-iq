@@ -8,7 +8,9 @@ from config.settings import GOOGLE_API_KEY, XAI_API_KEY
 
 
 def create_google_client(api_key: str) -> OpenAI:
-    return OpenAI(api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
+    client = OpenAI(api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
+    client.max_retries = 0
+    return client
 
 
 def get_google_client() -> OpenAI:
@@ -18,7 +20,9 @@ def get_google_client() -> OpenAI:
 
 
 def create_grok_client(api_key: str) -> OpenAI:
-    return OpenAI(api_key=api_key, base_url="https://api.x.ai/v1")
+    client = OpenAI(api_key=api_key, base_url="https://api.x.ai/v1")
+    client.max_retries = 0
+    return client
 
 
 def get_grok_client() -> OpenAI:
