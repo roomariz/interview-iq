@@ -16,7 +16,7 @@ class TestClientConfiguration(unittest.TestCase):
             base_url="https://openrouter.ai/api/v1",
             default_headers={
                 "HTTP-Referer": "http://localhost",
-                "X-OpenRouter-Title": "Interview Practice App",
+                "X-OpenRouter-Title": "InterviewIQ",
             },
         )
 

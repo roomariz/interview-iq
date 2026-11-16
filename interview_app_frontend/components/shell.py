@@ -88,7 +88,7 @@ def render_welcome() -> None:
         """
         <div class="welcome-card welcome-card--compact welcome-card--welcome">
             <div class="welcome-header">
-                <div class="welcome-title">Interview Practice App</div>
+                <div class="welcome-title">InterviewIQ</div>
             </div>
             <div class="welcome-body">
                 <div class="hero-figure" aria-hidden="true">

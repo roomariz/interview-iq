@@ -8,7 +8,7 @@ The app now uses a layered structure with Streamlit screens in `frontend/` and b
 
 1. Install dependencies with `pip install -r requirements.txt`.
 2. Launch the app with `streamlit run app.py`.
-3. Start on the welcome screen and select `Start Setup` to move to the setup screen.
+3. Start on the InterviewIQ welcome screen and select `Start Setup` to move to the setup screen; its left panel shows InterviewIQ aligned left beside the logo.
 
 ## What You Will See
 

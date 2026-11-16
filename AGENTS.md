@@ -166,6 +166,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-16 | architecture | Keep score-based performance verdict separate from evaluator uncertainty; trace risk reasons, preserve supported coaching and use concise decision probes | User confidence and feedback correction |
 
+| 2026-11-16 | UX | Use InterviewIQ as the displayed app name, browser title and setup left-panel brand; align the text left beside the logo | User branding correction |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 

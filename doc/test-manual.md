@@ -3,8 +3,8 @@
 ## Manual Checks
 
 1. Run `streamlit run app.py`.
-2. Confirm the welcome screen loads.
-3. Click `Start Setup` and confirm the setup screen appears.
+2. Confirm the welcome heading and browser tab title both show InterviewIQ.
+3. Click `Start Setup`; confirm the setup screen appears and its left panel shows InterviewIQ aligned left beside the logo.
 4. Toggle `st.session_state.has_active_session` to `True` and refresh the app.
 5. Confirm the alternate welcome state shows resume and new session actions.
 6. Expand the advanced configuration section on setup and confirm the detected tech stack is shown before any manual override.

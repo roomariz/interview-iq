@@ -54,7 +54,7 @@ def render_interview_sidebar(
         <aside class="{sidebar_class}">
             <div class="setup-sidebar-brand">
                 <div class="setup-sidebar-logo" aria-hidden="true"></div>
-                <div class="setup-sidebar-title">Interview<br/>Practice App</div>
+                <div class="setup-sidebar-title">InterviewIQ</div>
             </div>
             <div class="setup-sidebar-section">Configuration</div>
             {_sidebar_item("Role", role, "briefcase", active=active)}

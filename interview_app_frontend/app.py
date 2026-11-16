@@ -80,7 +80,7 @@ def _apply_route_from_query_params() -> None:
 def main() -> None:
     setup_logging()
     LOGGER.info("APP_START", extra={"version": "1.0"})
-    st.set_page_config(page_title="Interview Practice App", layout="wide")
+    st.set_page_config(page_title="InterviewIQ", layout="wide")
     clean_widget_state()
     ensure_session_state()
     LOGGER.info("Resolved LLM provider: %s model: %s", LLM_PROVIDER, MODEL_NAME)

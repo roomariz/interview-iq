@@ -5,7 +5,7 @@ from dotenv import dotenv_values
 from dotenv import load_dotenv
 
 
-APP_TITLE = "Interview Practice App"
+APP_TITLE = "InterviewIQ"
 TEMPERATURE = 0.7
 DEFAULT_MODEL = "google/gemma-4-31b-it:free"
 

@@ -6,11 +6,11 @@ The repository now separates frontend, backend, shared, and config concerns. CI 
 
 ## Files
 
-- `app.py`: root launcher.
+- `app.py`: root launcher; welcome heading, browser title and `APP_TITLE` use InterviewIQ.
 - `interview_app_frontend/app.py`: Streamlit entry point.
 - `interview_app_frontend/ui/screens.py`: screen routing.
 - `interview_app_frontend/components/shell.py`: screen shell, setup layout, CV paste handling, and top-level CTA placement.
-- `interview_app_frontend/components/sidebar.py`: shared sidebar renderer used by setup, question, and feedback screens.
+- `interview_app_frontend/components/sidebar.py`: shared sidebar renderer with InterviewIQ text aligned left beside its logo, used by setup, question, and feedback screens.
 - `interview_app_frontend/components/question_panel.py`: compact right-hand question panel renderer for the question screen.
 - `interview_app_frontend/components/answer_evaluation_screen.py`: locked evaluation screen that polls the background answer-evaluation job.
 - `interview_app_frontend/components/feedback_screen.py`: feedback screen renderer for the diagnostic view, collapsible question and submitted-answer sections, and report download.
