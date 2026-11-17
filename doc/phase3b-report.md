@@ -130,3 +130,7 @@ There is no basis yet for reporting hosted latency, execution duration, inferenc
 costs or a production-ready hosted workflow. Only expiring Redis verification
 counters were written remotely. No Production deployment, live LLM call, paid
 infrastructure, source push or Vercel project/environment mutation occurred.
+
+## 17 November security follow-up
+
+The earlier advisory findings remain visible. [Dependency remediation](dependency-security-review.md) now records clean current runtime, development and installed-environment audits, with the same 12 functional failures. No deployment was performed.

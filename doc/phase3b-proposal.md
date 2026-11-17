@@ -76,8 +76,9 @@ Sources: [Vercel FastAPI](https://vercel.com/docs/frameworks/backend/fastapi),
 ## Gates before deployment
 
 The publication-time dependency audit reported advisories in five packages.
-See [the audit and publication plan](phase3b-publication-plan.md). Dependency
-triage/remediation is required before deployment approval.
+The historical [audit](phase3b-publication-plan.md) is preserved; the subsequent
+[security review](dependency-security-review.md) records the patched pins and
+clean current audits. Existing functional failures and hosted checks remain gates.
 
 1. Real Upstash verification passed across two independent backend processes.
    See [the actual verification results](phase3b-redis-verification.md). Repeat quota

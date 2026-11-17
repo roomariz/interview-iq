@@ -38,7 +38,8 @@ def test_preview_bypass_is_optional(monkeypatch):
 
 
 def test_cloud_entrypoint_renders_existing_welcome_screen():
-    ui = AppTest.from_file("deployment/streamlit/app.py").run()
+    entrypoint = Path(__file__).resolve().parents[1] / "deployment/streamlit/app.py"
+    ui = AppTest.from_file(str(entrypoint)).run()
     assert not ui.exception
     assert ui.button(key="welcome_start_setup")
 

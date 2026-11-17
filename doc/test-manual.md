@@ -246,4 +246,4 @@ Do not use real providers for manual checks without explicit permission.
 Run `python -m pytest tests/test_phase3_deadlines.py tests/test_phase3_rate_limit.py tests/test_phase3b_deployment.py -q`.
 With mocked providers, exhaust a short deadline and check the retry notice.
 Across two instances, verify a combined 429 quota and 503 on shared-service outage.
-See [Phase 3A verification](phase3a-test-results.md) and [real Redis checks](phase3b-upstash-setup.md); no live provider calls authorised.
+See [Phase 3A verification](phase3a-test-results.md) and [real Redis checks](phase3b-upstash-setup.md); [dependency upgrade verification](dependency-security-review.md); no live provider calls authorised.

@@ -175,6 +175,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-16 | architecture | Prepare reviewed Phase 3A/3B local commit on codex/phase3b-preview; Frankfurt Redis/Vercel region; no push, cloud mutation, paid service or live LLM calls before approval | User Git publication scope |
 
+| 2026-11-17 | security | Remediate dependency advisories on feat/streamlit-vercel-backend; preserve app/contracts/providers/config, compare against 12 baseline failures, no push/main merge/deployment/live inference | User security-review scope |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 

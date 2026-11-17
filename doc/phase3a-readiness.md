@@ -95,7 +95,7 @@ automatic paid fallback or hardcoded production backend URL was introduced.
 
 ## Backend packaging and Vercel assessment
 
-`requirements-backend.txt` contains only seven pinned runtime dependencies;
+`requirements-backend.txt` contains backend runtime and security transitive pins;
 `requirements-frontend.txt` supports Streamlit separately. Existing root/local and
 development requirements remain available. `pyproject.toml` repeats the backend
 pins for Vercel's manifest discovery and declares Python 3.12 and
@@ -161,3 +161,5 @@ test failures that still require separate resolution.
 9. Review logs for privacy, set provider spending caps/firewall controls, and approve
    production promotion separately. Preserve a rollback target and rotate secrets
    if exposed. No deployment command has been run during Phase 3A.
+
+Security pins were updated on 17 November 2026; see [current remediation and validation](dependency-security-review.md). The original assessment above records the earlier phase results.

@@ -94,3 +94,7 @@ settings and configure Preview protection/automation bypass for Streamlit.
 Avoid an initial Production import and do not assign production domains, promote
 a release, upgrade a plan or create paid resources. Git publication approval is
 separate from approval to create/configure/deploy the Vercel project.
+
+## 17 November security follow-up
+
+The historical advisory results above are preserved. [The remediation review](dependency-security-review.md) records patched pins, clean current audits and the unchanged failure baseline. Security changes are prepared locally; publication remains unapproved.

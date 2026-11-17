@@ -210,3 +210,7 @@ session ownership remain unchanged. See [production readiness](phase3a-readiness
 ## Cloud test preparation
 
 See [Phase 3B proposal](phase3b-proposal.md) and [free Redis setup](phase3b-upstash-setup.md). Real Redis verification passed; Git publication and Preview deployment await approval.
+
+## Dependency security update
+
+The supported runtime pins have been patched; screens and interview behaviour are preserved. See [the security review](dependency-security-review.md) for tested versions and remaining release checks.
