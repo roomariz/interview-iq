@@ -60,6 +60,9 @@ def stop_backend(process):
 
 
 def verify():
+    # Support the documented direct script invocation as well as python -m.
+    sys.path.insert(0, str(ROOT))
+    from shared.visitor_identity import issue
     url = os.getenv("UPSTASH_REDIS_REST_URL", "")
     token = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
     if not url or not token:
@@ -68,10 +71,14 @@ def verify():
     environment = {key: value for key, value in os.environ.items()
                    if key.upper() in {"SYSTEMROOT", "WINDIR", "PATH", "TEMP", "TMP", "HOME", "USERPROFILE"}}
     secret = secrets.token_urlsafe(48)
+    visitor_key = secrets.token_urlsafe(48)
+    visitor = issue(visitor_key)
     environment.update(APP_ENV="production", LLM_PROVIDER="ollama", OLLAMA_API_KEY="unused-verification-key",
                        BACKEND_API_SECRET=secret, BACKEND_RATE_BACKEND="redis", BACKEND_RATE_LIMIT="4",
                        BACKEND_RATE_NAMESPACE="iqverify-" + uuid.uuid4().hex, BACKEND_REQUEST_DEADLINE="10",
                        UPSTASH_REDIS_REST_URL=url, UPSTASH_REDIS_REST_TOKEN=token)
+    environment.update(BACKEND_VISITOR_SIGNING_KEY=visitor_key, BACKEND_VISITOR_RATE_LIMIT="4",
+                       BACKEND_MAX_CONCURRENT="8")
     processes = []
     try:
         for _ in range(2):
@@ -79,7 +86,7 @@ def verify():
         urls = [item[1] for item in processes]
 
         def context_request(index, authenticated=True):
-            headers = {"Authorization": f"Bearer {secret}"} if authenticated else {}
+            headers = {"Authorization": f"Bearer {secret}", "X-Interview-Visitor": visitor} if authenticated else {}
             return httpx.post(urls[index % 2] + "/api/interview/context", json={"role": "Backend Engineer"},
                               headers=headers, timeout=15, trust_env=False)
 
@@ -98,13 +105,15 @@ def verify():
         process, outage_url = start_backend(outage)
         processes.append((process, outage_url))
         response = httpx.post(outage_url + "/api/interview/context", json={"role": "Backend Engineer"},
-                              headers={"Authorization": f"Bearer {secret}"}, timeout=15, trust_env=False)
+                              headers={"Authorization": f"Bearer {secret}", "X-Interview-Visitor": visitor},
+                              timeout=15, trust_env=False)
         assert response.status_code == 503, "Redis outage did not fail closed"
         invalid = dict(environment, UPSTASH_REDIS_REST_TOKEN="invalid-verification-token")
         process, invalid_url = start_backend(invalid)
         processes.append((process, invalid_url))
         response = httpx.post(invalid_url + "/api/interview/context", json={"role": "Backend Engineer"},
-                              headers={"Authorization": f"Bearer {secret}"}, timeout=15, trust_env=False)
+                              headers={"Authorization": f"Bearer {secret}", "X-Interview-Visitor": visitor},
+                              timeout=15, trust_env=False)
         assert response.status_code == 503, "Invalid Redis credentials did not fail closed"
         assert token not in response.text and secret not in response.text
         # Wait past this run's entire window; never delete or inspect unrelated keys.

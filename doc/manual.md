@@ -214,3 +214,7 @@ See [Phase 3B proposal](phase3b-proposal.md) and [free Redis setup](phase3b-upst
 ## Dependency security update
 
 The supported runtime pins have been patched; screens and interview behaviour are preserved. See [the security review](dependency-security-review.md) for tested versions and remaining release checks. See [local readiness](final-deployment-readiness.md) for verified local results, shared anonymous-user limits and Preview gates.
+
+## Anonymous access limits
+
+With Phase 4A enabled, each anonymous Streamlit connection receives a private, expiring identity without login. The approved pilot allows 10 admitted API requests/minute and 100/day per identity, with shared caps of 30/minute, 1,000/day and four active requests. A limit or busy response asks you to wait; resetting the browser connection can create a new identity and does not reset the application caps. See [details and limitations](phase4a-report.md).

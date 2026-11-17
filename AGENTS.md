@@ -179,6 +179,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-17 | security | Resolve baseline tests and assess Redis, anonymous quotas and readiness; commit locally only, no push, deployment or live LLM calls; quota redesign requires approval | User final-verification scope |
 
+| 2026-11-17 | security | Phase 4A local only: signed anonymous quotas 10/minute and 100/day; global 30/minute and 1,000/day; distributed leases and private logging; mocked providers, no push/deploy/Production changes | User implementation scope and approved pilot limits |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 

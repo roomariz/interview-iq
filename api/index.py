@@ -1,3 +1,5 @@
+from interview_app_backend.utils.logging_config import setup_logging
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from pydantic import ValidationError
@@ -6,6 +8,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from api.interview import router
 from api.security import InterviewSecurity, error_response
 from api.errors import provider_error
+
+setup_logging()
 
 app = FastAPI(title="InterviewIQ API")
 app.add_middleware(InterviewSecurity)

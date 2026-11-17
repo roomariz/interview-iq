@@ -147,7 +147,7 @@ def test_question_generation_timeout_recovery_uses_backup_question(caplog):
     assert st.session_state.question_job["status"] == "timeout"
     assert "We prepared a backup question to keep your session smooth." in st.session_state.question_generation_notice
     assert "Question generation fallback root cause: reason=timeout_exceeded" in caplog.text
-    assert "exceeded wait limit" in caplog.text
+    assert "error=<redacted>" in caplog.text
 
 
 def test_question_generation_failure_recovery_uses_backup_question(caplog):
@@ -175,7 +175,7 @@ def test_question_generation_failure_recovery_uses_backup_question(caplog):
     assert st.session_state.question_job["status"] == "failed"
     assert "We prepared a backup question to keep your session smooth." in st.session_state.question_generation_notice
     assert "Question generation fallback root cause: reason=future_exception" in caplog.text
-    assert "boom" in caplog.text
+    assert "boom" not in caplog.text and "error=<redacted>" in caplog.text
 
 
 def test_timeout_fallback_is_not_overwritten_by_late_completion():

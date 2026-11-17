@@ -43,11 +43,15 @@ class InterviewAPIClient:
         self.timeout = float(timeout if timeout is not None else _setting("BACKEND_API_TIMEOUT", "180"))
         self.transport = transport
         self.preview_bypass = _setting("VERCEL_AUTOMATION_BYPASS_SECRET")
+        from interview_app_frontend.services.visitor import session_token
+        self.visitor = session_token(_setting("BACKEND_VISITOR_SIGNING_KEY"))
 
     def _post(self, path: str, payload: BaseModel, response: type[Response]) -> Response:
         if not self.secret:
             raise BackendError("The interview service connection is not configured.")
         headers = {"Authorization": f"Bearer {self.secret}"}
+        if self.visitor:
+            headers["X-Interview-Visitor"] = self.visitor
         if self.preview_bypass:
             headers["x-vercel-protection-bypass"] = self.preview_bypass
         try:

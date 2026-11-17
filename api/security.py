@@ -7,6 +7,9 @@ from time import monotonic
 
 from api.configuration import BackendConfig
 from api.rate_limit import RateLimiter
+from api.admission import Admission
+from shared.visitor_identity import validate
+import logging
 from interview_app_backend.llm.deadline import Deadline, current_deadline
 
 from starlette.responses import JSONResponse
@@ -35,21 +38,27 @@ class InterviewSecurity:
         deadline = Deadline(monotonic() + config.deadline)
         token = current_deadline.set(deadline)
         response_started = False
+        started = monotonic()
+        status = 500
 
         async def tracked_send(message):
-            nonlocal response_started
+            nonlocal response_started, status
             if message["type"] == "http.response.start":
                 response_started = True
+                status = message["status"]
             await send(message)
 
         try:
             await asyncio.wait_for(self.handle(scope, receive, tracked_send, config), deadline.remaining())
         except TimeoutError:
+            status = 504
             if not response_started:
                 await error_response(504, "timeout", "The provider took too long. Please try again.")(scope, receive, send)
         finally:
             deadline.cancelled.set()
             current_deadline.reset(token)
+            logging.getLogger("interview.security").info(
+                "request_complete", extra={"status_code": status, "duration_ms": int((monotonic() - started) * 1000)})
 
     async def handle(self, scope, receive, send, config):
         headers = dict(scope["headers"])
@@ -60,7 +69,15 @@ class InterviewSecurity:
         if not hmac.compare_digest(supplied, f"Bearer {secret}".encode()):
             return await error_response(401, "unauthorised", "Backend authentication failed.",
                                         {"WWW-Authenticate": "Bearer"})(scope, receive, send)
+        visitor = None
+        if config.visitor_key:
+            try:
+                visitor = validate(headers.get(b"x-interview-visitor", b"").decode("ascii"), config.visitor_key)
+            except (ValueError, UnicodeError):
+                return await error_response(401, "visitor_identity", "Anonymous session identity is invalid or expired.")(
+                    scope, receive, send)
         try:
+            # Cheap ingress throttle is separate from admitted visitor/global work quotas.
             retry = await self.limiter.retry_after(config, secret)
         except Exception:
             return await error_response(503, "rate_service", "Interview service is temporarily unavailable.",
@@ -68,7 +85,7 @@ class InterviewSecurity:
         if retry:
             return await error_response(429, "rate_limit", "Please wait before trying again.",
                                         {"Retry-After": str(retry)})(scope, receive, send)
-        if self.active >= config.max_concurrent:
+        if not visitor and self.active >= config.max_concurrent:
             return await error_response(503, "busy", "Interview service is busy. Please try again.",
                                         {"Retry-After": "5"})(scope, receive, send)
         if headers.get(b"content-encoding", b"identity") != b"identity":
@@ -91,9 +108,31 @@ class InterviewSecurity:
             body.extend(chunk)
             if not message.get("more_body", False):
                 break
-        if self.active >= config.max_concurrent:
+        if visitor:
+            from shared.api_contracts import ContextRequest, QuestionRequest, EvaluationRequest, ExampleRequest
+            schemas = {"context": ContextRequest, "question": QuestionRequest,
+                       "evaluate": EvaluationRequest, "example-answer": ExampleRequest}
+            schema = schemas.get(scope["path"].rsplit("/", 1)[-1])
+            if schema:
+                try:
+                    schema.model_validate_json(body)
+                except ValueError:
+                    return await error_response(422, "validation", "Please check the interview inputs and their lengths.")(
+                        scope, receive, send)
+        if not visitor and self.active >= config.max_concurrent:
             return await error_response(503, "busy", "Interview service is busy. Please try again.",
                                         {"Retry-After": "5"})(scope, receive, send)
+        admission = None
+        if visitor:
+            admission = Admission(config, visitor)
+            try:
+                decision, retry = await admission.acquire()
+            except Exception:
+                return await error_response(503, "rate_service", "Interview service is temporarily unavailable.",
+                                            {"Retry-After": "5"})(scope, receive, send)
+            if decision:
+                return await error_response(429, "rate_limit" if decision == 1 else "busy",
+                                            "Please wait before trying again.", {"Retry-After": str(retry)})(scope, receive, send)
         self.active += 1
         delivered = False
 
@@ -113,3 +152,7 @@ class InterviewSecurity:
             await self.app(scope, bounded_receive, private_send)
         finally:
             self.active -= 1
+            if admission:
+                deadline = current_deadline.get()
+                deadline.cancelled.set()
+                await admission.finish(deadline)

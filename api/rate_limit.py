@@ -43,4 +43,5 @@ class RateLimiter:
         count, ttl = payload["result"]
         if type(count) is not int or type(ttl) is not int or count < 1 or not 0 < ttl <= 60000:
             raise ValueError("Invalid shared quota response")
-        return max(1, math.ceil(ttl / 1000)) if count > config.rate_limit else 0
+        limit = config.ingress_rate if config.visitor_key else config.rate_limit
+        return max(1, math.ceil(ttl / 1000)) if count > limit else 0

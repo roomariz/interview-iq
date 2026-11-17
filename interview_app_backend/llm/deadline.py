@@ -2,7 +2,7 @@
 
 from contextvars import ContextVar, copy_context
 from dataclasses import dataclass, field
-from threading import BoundedSemaphore, Event, Thread
+from threading import BoundedSemaphore, Event, Thread, Lock
 from time import monotonic
 import time
 
@@ -15,6 +15,12 @@ class DeadlineExceeded(TimeoutError):
 class Deadline:
     expires: float
     cancelled: Event = field(default_factory=Event)
+    transports: int = 0
+    transport_lock: Lock = field(default_factory=Lock)
+
+    def has_transports(self):
+        with self.transport_lock:
+            return self.transports > 0
 
     def remaining(self) -> float:
         value = self.expires - monotonic()
@@ -58,6 +64,10 @@ def provider_call(operation, timeout: float):
     done = Event()
     outcome = []
     context = copy_context()
+    deadline = current_deadline.get()
+    if deadline:
+        with deadline.transport_lock:
+            deadline.transports += 1
 
     def invoke():
         check()
@@ -69,6 +79,9 @@ def provider_call(operation, timeout: float):
         except BaseException as exc:
             outcome.append((False, exc))
         finally:
+            if deadline:
+                with deadline.transport_lock:
+                    deadline.transports -= 1
             _transport_slots.release()
             done.set()
 
