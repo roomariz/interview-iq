@@ -181,6 +181,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-17 | security | Phase 4A local only: signed anonymous quotas 10/minute and 100/day; global 30/minute and 1,000/day; distributed leases and private logging; mocked providers, no push/deploy/Production changes | User implementation scope and approved pilot limits |
 
+| 2026-11-17 | security | Phase 4B preparation: review and commit Phase 4A locally; preserve protected personal Hobby Preview and inert Production bootstrap; present exact mocked update for approval before any push/deploy; no live inference or paid services | User preparation and approval boundary |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 
