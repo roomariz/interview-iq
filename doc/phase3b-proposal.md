@@ -12,7 +12,7 @@ configuration has been performed. Only expiring Redis verification counters were
 | Vercel team | astraut-solutions' projects (`astraut-solutions-projects`) |
 | New project name | interviewiq-api-preview |
 | Source | existing roomariz/interview-iq repository |
-| Publication branch | codex/phase3b-preview, based on feat/streamlit-vercel-backend |
+| Publication branch | feat/streamlit-vercel-backend; includes merged Phase 3A/3B and security updates |
 | Root / framework | repository root / FastAPI |
 | Entrypoint | api.index:app, via tool.vercel.entrypoint |
 | Python | 3.12 |
@@ -26,11 +26,12 @@ configuration has been performed. Only expiring Redis verification counters were
 | Provider | Ollama Cloud; gemma4:cloud alias; OpenRouter fallback disabled |
 | Rate limiting | managed Upstash REST; shared interviewiq-preview namespace |
 
-The reviewed preparation commit is based on `83c43f6` and is prepared locally on
-`codex/phase3b-preview`. Publication remains unapproved. Obtain its exact revision
-with `git rev-parse codex/phase3b-preview` before an approved push/deployment.
-Remote branch inspection found no existing `codex/phase3b-preview`; main is
-`164fe22`, and the remote feature branch remains `83c43f6`. No force-push or merge
+The original reviewed preparation commit is based on `83c43f6` and was prepared locally on
+`codex/phase3b-preview`. It has since been merged into the feature branch, whose
+security commit is `014f06b`. Publish only an approved feature-branch revision;
+use `git rev-parse feat/streamlit-vercel-backend` to identify it. Publication remains unapproved.
+At the original remote inspection, no `codex/phase3b-preview` existed; main was
+`164fe22`, and the remote feature branch was `83c43f6`. No force-push or main merge
 is proposed. See [publication plan](phase3b-publication-plan.md) for commit scope.
 The GitHub connector reports read access without push/admin permissions; an
 approved push will require authorised Git transport/account access.

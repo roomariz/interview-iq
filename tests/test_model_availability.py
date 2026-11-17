@@ -1,8 +1,9 @@
 import logging
+import httpx
 import pytest
 from unittest.mock import patch, MagicMock
 
-from interview_app_backend.llm.client import RateLimitError, call_llm, _extract_provider, _is_model_unavailable_error
+from interview_app_backend.llm.client import RateLimitError, call_llm, _extract_provider
 from config.settings import FREE_MODELS, MODEL_NAME
 
 
@@ -44,10 +45,11 @@ class TestModelFallbackLogic:
 
     def test_transient_free_model_retries_then_moves_on(self):
         mock_client = MagicMock()
+        response = httpx.Response(429, request=httpx.Request("POST", "https://provider.example/responses"))
         errors = [
-            RateLimitError("Error code: 429 - rate limited"),
-            RateLimitError("Error code: 429 - rate limited"),
-            RateLimitError("Error code: 429 - rate limited"),
+            RateLimitError("Error code: 429 - rate limited", response=response, body={"error": "rate limited"}),
+            RateLimitError("Error code: 429 - rate limited", response=response, body={"error": "rate limited"}),
+            RateLimitError("Error code: 429 - rate limited", response=response, body={"error": "rate limited"}),
             MagicMock(output_text='{"ok": true}'),
         ]
         mock_client.responses.create.side_effect = errors

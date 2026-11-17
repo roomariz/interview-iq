@@ -5,7 +5,7 @@ sys.path.append(r"D:\workspace\Turing_College\interview-practice-app\rrizwa-AE.1
 import pytest
 import streamlit as st
 
-from interview_app_frontend.state.session_manager import submit_answer
+from interview_app_frontend.state.session_manager import ensure_session_state, submit_answer
 
 
 @pytest.fixture(autouse=True)
@@ -16,6 +16,7 @@ def reset_session_state():
 
 
 def test_submit_answer_persists_trimmed_answer():
+    ensure_session_state()
     expected_answer = "Strong example answer with enough detail to pass the minimum length gate."
     st.session_state["answer"] = f"  {expected_answer}  "
     st.session_state["answers"] = []
@@ -35,9 +36,11 @@ def test_submit_answer_persists_trimmed_answer():
                 "overall_decision": "pass",
                 "scores": {"relevance": 7, "structure": 4, "specificity": 4, "communication": 7, "problem_solving_approach": 5},
                 "labels": {},
-                "feedback": {"summary": "Strong response.", "strengths": [], "key_issues": [], "improvements": []},
+                "feedback": {"summary": "Strong response.", "strengths": ["Provides a concrete example"], "key_issues": [], "improvements": []},
                 "follow_up": {"question": "How would you tighten the example?", "type": "depth_probe", "target_dimension": "problem_solving_approach"},
                 "memory_storage_allowed": True,
+                "trust": {"trust_level": "high", "score_confidence": 0.9},
+                "feedback_validation": {"status": "checked"},
                 "relevance_gate_applied": False,
                 "topic_match": True,
             },

@@ -85,13 +85,20 @@ def test_question_schema_failure_retries_before_success(transport):
 
 
 def test_existing_evaluator_validates_evidence_and_scores(transport):
-    transport.side_effect = [envelope("YES"), envelope({"has_reasoning": True}), envelope(SCORE_PAYLOAD)]
+    repair = {"feedback": {"strengths": ["Concrete action"], "key_issues": [], "improvements": []},
+              "feedback_support": [{"claim": "Concrete action", "question_quote": QUESTION, "answer_quote": ANSWER}]}
+    transport.side_effect = [envelope("YES"), envelope({"has_reasoning": True}),
+                             envelope(SCORE_PAYLOAD), envelope(repair)]
     result = evaluation_service.evaluate_answer(QUESTION, ANSWER)
     assert "scores" in result
     assert result["answer"] == ANSWER
     assert result["evaluation_context"]["has_reasoning"] is True
-    assert transport.call_count == 3
-    assert "scores" in transport.call_args.kwargs["json"]["messages"][-1]["content"]
+    assert transport.call_count == 4
+    prompts = [call.kwargs["json"]["messages"][-1]["content"] for call in transport.call_args_list]
+    assert "scores" in prompts[2]
+    assert prompts[3].startswith("Repair coaching feedback only")
+    assert result["feedback"]["strengths"] == ["Concrete action"]
+    assert all(type(value) is int and 0 <= value <= 10 for value in result["scores"].values())
 
 
 def test_failed_ollama_scoring_returns_no_placeholder_result(transport, monkeypatch):

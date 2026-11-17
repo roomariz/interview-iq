@@ -87,8 +87,9 @@ def verify():
         assert unauthorised.status_code == 401, "Authentication check failed"
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             responses = list(pool.map(context_request, range(8)))
+        observed = time.monotonic()
         statuses = sorted(response.status_code for response in responses)
-        assert statuses == [200] * 4 + [429] * 4, "Combined quota or Redis connectivity failed"
+        assert statuses == [200] * 4 + [429] * 4, f"Combined quota statuses: {statuses}"
         assert all(1 <= int(response.headers["Retry-After"]) <= 60 for response in responses
                    if response.status_code == 429), "Retry-After check failed"
         assert all(secret not in response.text and token not in response.text for response in responses)
@@ -99,6 +100,18 @@ def verify():
         response = httpx.post(outage_url + "/api/interview/context", json={"role": "Backend Engineer"},
                               headers={"Authorization": f"Bearer {secret}"}, timeout=15, trust_env=False)
         assert response.status_code == 503, "Redis outage did not fail closed"
+        invalid = dict(environment, UPSTASH_REDIS_REST_TOKEN="invalid-verification-token")
+        process, invalid_url = start_backend(invalid)
+        processes.append((process, invalid_url))
+        response = httpx.post(invalid_url + "/api/interview/context", json={"role": "Backend Engineer"},
+                              headers={"Authorization": f"Bearer {secret}"}, timeout=15, trust_env=False)
+        assert response.status_code == 503, "Invalid Redis credentials did not fail closed"
+        assert token not in response.text and secret not in response.text
+        # Wait past this run's entire window; never delete or inspect unrelated keys.
+        time.sleep(max(0, 61 - (time.monotonic() - observed)))
+        reset = context_request(0)
+        assert reset.status_code == 200, f"Quota did not reset: {reset.status_code}"
+        print("PASS: expiry/reset and invalid Redis credentials fail closed")
         print("PASS: two processes; 4 admitted, 4 rate-limited; Retry-After, auth and outage checks passed")
         print("No LLM calls. Synthetic quota key expires within 60 seconds.")
     finally:
@@ -111,5 +124,6 @@ if __name__ == "__main__":
         verify()
     except Exception as exc:
         # Neither tracebacks nor upstream exception strings may expose credentials.
-        print(f"Redis verification failed ({type(exc).__name__}); check configuration and connectivity.")
+        detail = str(exc) if isinstance(exc, AssertionError) else "check configuration and connectivity"
+        print(f"Redis verification failed ({type(exc).__name__}): {detail}")
         sys.exit(1)

@@ -177,6 +177,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-17 | security | Remediate dependency advisories on feat/streamlit-vercel-backend; preserve app/contracts/providers/config, compare against 12 baseline failures, no push/main merge/deployment/live inference | User security-review scope |
 
+| 2026-11-17 | security | Resolve baseline tests and assess Redis, anonymous quotas and readiness; commit locally only, no push, deployment or live LLM calls; quota redesign requires approval | User final-verification scope |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 

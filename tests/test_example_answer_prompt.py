@@ -56,7 +56,9 @@ class TestExampleAnswerPrompt(unittest.TestCase):
 
         self.assertEqual(result["answer"], "I improved latency by caching repeated work.")
         mock_client.assert_called_once()
-        prompt = mock_call.call_args.args[0]
+        scoring_calls = [call for call in mock_call.call_args_list if call.kwargs.get("task") == "evaluation.scoring"]
+        self.assertEqual(len(scoring_calls), 1)
+        prompt = scoring_calls[0].args[0]
         self.assertTrue(prompt.startswith(EVALUATION_PROMPT))
         self.assertIn("Question:\nQuestion text.", prompt)
         self.assertIn("Answer:\nI improved latency by caching repeated work.", prompt)

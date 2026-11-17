@@ -246,4 +246,4 @@ Backup generation selects scenario-specific text and focus before validation.
 
 ## Reliability references
 
-See [relevance](relevance-evaluation-fix.md), [feedback](evaluation-reliability-fix.md), [confidence](evaluation-confidence-correction.md) and [Phase 3A production configuration](phase3a-readiness.md), [Phase 3B proposal](phase3b-proposal.md) and [Redis setup](phase3b-upstash-setup.md) and [patched dependencies](dependency-security-review.md).
+See [relevance](relevance-evaluation-fix.md), [feedback](evaluation-reliability-fix.md), [confidence](evaluation-confidence-correction.md) and [Phase 3A production configuration](phase3a-readiness.md), [Phase 3B proposal](phase3b-proposal.md) and [Redis setup](phase3b-upstash-setup.md) and [patched dependencies](dependency-security-review.md) and [local readiness](final-deployment-readiness.md), including quota scope and the unresolved historical Redis anomaly.

@@ -213,4 +213,4 @@ See [Phase 3B proposal](phase3b-proposal.md) and [free Redis setup](phase3b-upst
 
 ## Dependency security update
 
-The supported runtime pins have been patched; screens and interview behaviour are preserved. See [the security review](dependency-security-review.md) for tested versions and remaining release checks.
+The supported runtime pins have been patched; screens and interview behaviour are preserved. See [the security review](dependency-security-review.md) for tested versions and remaining release checks. See [local readiness](final-deployment-readiness.md) for verified local results, shared anonymous-user limits and Preview gates.

@@ -16,6 +16,7 @@ class TestMockedOpenRouterCall(unittest.TestCase):
         client.responses.create.assert_called_once_with(
             model=MODEL_NAME,
             input="Explain dependency injection.",
+            timeout=60,
         )
 
     def test_call_llm_accepts_plain_string_response(self):
@@ -40,7 +41,10 @@ class TestMockedOpenRouterCall(unittest.TestCase):
         ) as mock_openai:
             get_openrouter_client()
 
-        mock_openai.assert_called_once_with(api_key="test-key", base_url="https://openrouter.ai/v1")
+        mock_openai.assert_called_once_with(
+            api_key="test-key", base_url="https://openrouter.ai/api/v1",
+            default_headers={"HTTP-Referer": "http://localhost", "X-OpenRouter-Title": "InterviewIQ"},
+        )
 
 
 if __name__ == "__main__":

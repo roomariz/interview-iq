@@ -41,20 +41,17 @@ class TestClientConfiguration(unittest.TestCase):
         mock_client.responses.create.return_value = response
 
         with patch.object(client_module, "MODEL_NAME", "google/gemma-4-31b-it:free"), patch("builtins.print") as mock_print, self.assertLogs(
-            "interview_app_backend.llm.client",
+            "llm",
             level="INFO",
         ) as logs:
             client_module.call_llm("prompt", mock_client, task="question_generation.cv_based")
 
-        mock_print.assert_any_call("MODEL USED:", "google/gemma-4-31b-it:free")
-        self.assertTrue(
-            any(
-                "status=success" in entry
-                and "task=question_generation.cv_based" in entry
-                and "model=google/gemma-4-31b-it:free" in entry
-                for entry in logs.output
-            )
-        )
+        mock_print.assert_not_called()
+        record = next(record for record in logs.records if record.getMessage() == "LLM_SUCCESS")
+        self.assertEqual(record.task, "question_generation.cv_based")
+        self.assertEqual(record.model, "google/gemma-4-31b-it:free")
+        self.assertEqual(record.provider, "google")
+        self.assertNotIn("prompt", " ".join(logs.output))
 
     def test_get_openrouter_client_uses_configured_api_key(self):
         with patch("interview_app_backend.llm.client.OPENROUTER_API_KEY", "configured-key"), patch(

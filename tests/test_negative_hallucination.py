@@ -1,4 +1,4 @@
-import pytest
+import json
 from unittest.mock import patch
 
 from interview_app_backend.services.evaluation_service import evaluate_submission
@@ -42,7 +42,7 @@ def _evaluate(answer, context, payload, relevant=True):
     with patch("interview_app_backend.services.evaluation_service.is_answer_relevant", return_value=relevant), patch(
         "interview_app_backend.services.evaluation_service.get_openrouter_client", return_value=object()
     ), patch(
-        "interview_app_backend.services.evaluation_service.call_llm", return_value="{}"
+        "interview_app_backend.services.evaluation_service.call_llm", return_value=json.dumps(payload)
     ), patch(
         "interview_app_backend.services.evaluation_service.generate_reference_answer", return_value="Reference answer."
     ), patch("interview_app_backend.services.evaluation_service.calculate_semantic_similarity", return_value=0.88), patch(
@@ -134,8 +134,12 @@ class TestNegativeHallucination:
             improvements=["Mention alternative approaches considered"],
             summary="Strong answer with specific technique."
         )
+        answer = "I improved system performance by implementing Redis caching for frequently accessed data."
+        payload["feedback_support"] = [{
+            "claim": "Good use of caching to reduce latency", "question_quote": QUESTION, "answer_quote": answer,
+        }]
         result = _evaluate(
-            "I improved system performance by implementing Redis caching for frequently accessed data.",
+            answer,
             {"has_metrics": True, "metrics": [{"type": "latency"}], "has_structure": True, "has_reasoning": True, "has_tradeoffs": False, "has_alternatives": False, "confidence": {"metrics": 0.8, "structure": 0.7, "reasoning": 0.6, "tradeoffs": 0.3, "alternatives": 0.2}, "contradiction_flags": [], "anomaly_flags": [], "numeric_signals": [], "topic_match": True, "impact_strength": "moderate"},
             payload
         )

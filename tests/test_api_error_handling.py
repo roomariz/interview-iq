@@ -27,7 +27,7 @@ class TestApiErrorHandling(unittest.TestCase):
         from interview_app_backend.llm import client as client_module
 
         with patch.object(client_module, "MODEL_NAME", "model-one"), self.assertLogs(
-            "interview_app_backend.llm.client",
+            "llm",
             level="WARNING",
         ) as captured:
             result = call_llm("prompt", client)
