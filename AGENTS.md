@@ -187,6 +187,10 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-18 | security | Investigate and fix question progression locally on feat/streamlit-vercel-backend; preserve adaptation/security, commit separately, prepare one mocked replacement for approval; no push/deploy/main merge/live inference/paid services | User Phase 6A scope |
 
+| 2026-11-18 | security | Investigate leases without assuming a defect; isolated local Redis lifecycle and full mocked workflow verification, smallest proven fix only; no scoring/model changes, push, deployment, main merge, paid resources or live providers; propose hosted checks for separate approval | User lease investigation and workflow verification scope |
+
+| 2026-11-18 | security | Approved one isolated protected mocked workflow recovery Preview on roomas-projects; reviewed corrections commit and feature push only; maximum 14 admissions/26 verification HTTP attempts, zero spend/live inference; preserve old deployments/bootstrap/main and stop after report, no Streamlit release | Explicit hosted recovery execution approval |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 

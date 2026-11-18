@@ -17,6 +17,9 @@ from tests.mock_question_support import configure_questions
 
 @pytest.mark.parametrize("count,fail_second", [(1, False), (5, False), (5, True)])
 def test_streamlit_interview_with_local_fastapi(monkeypatch, count, fail_second):
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.setenv("BACKEND_RATE_BACKEND", "memory")
+    monkeypatch.setenv("BACKEND_VISITOR_SIGNING_KEY", "")
     monkeypatch.setenv("BACKEND_API_SECRET", "loopback-test-secret")
     monkeypatch.setenv("BACKEND_RATE_LIMIT", "1000")
     monkeypatch.setenv("BACKEND_API_TIMEOUT", "10")
@@ -108,6 +111,12 @@ def test_streamlit_interview_with_local_fastapi(monkeypatch, count, fail_second)
         assert attempts == list(range(1, total + 1))
         assert evaluations == questions
         assert len(set(questions)) == total
+        from interview_app_frontend.utils.session_summary_view import build_session_summary_view
+        summary = build_session_summary_view(ui.session_state)
+        assert summary["questions_completed"] == total
+        for dimension, average in summary["average_scores"].items():
+            expected = sum(answer["scores"][dimension] for answer in ui.session_state["answers"]) / total
+            assert average == round(expected, 1)
         assert failures == ([2] if fail_second else [])
         assert calls[1]["previous_questions"]
         assert not ui.exception
