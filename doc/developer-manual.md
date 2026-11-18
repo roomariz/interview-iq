@@ -244,6 +244,7 @@ Role-only grounding distinguishes named tools from generic capabilities and uses
 word boundaries. Retry errors include the question index and unsupported tool.
 Backup generation selects scenario-specific text and focus before validation.
 
-## Reliability references
+## Reliability references: Phase 5
+The optional `deployment/phase5_*` overlays enforce free-only routing and atomic budgets; normal startup does not install them. `phase5_redis.py` compares validated HTTPS roots and effective ports, accepting only empty/root paths; redirects stay disabled. See [replacement preparation](phase5-replacement-preview.md).
 
 See [relevance](relevance-evaluation-fix.md), [feedback](evaluation-reliability-fix.md), [confidence](evaluation-confidence-correction.md) and [Phase 3A production configuration](phase3a-readiness.md), [Phase 3B proposal](phase3b-proposal.md) and [Redis setup](phase3b-upstash-setup.md) and [patched dependencies](dependency-security-review.md) and [local readiness](final-deployment-readiness.md), including quota scope and the unresolved historical Redis anomaly. See [Phase 4A anonymous quotas, leases and private logging](phase4a-report.md) for the current controls and proposed Preview configuration.

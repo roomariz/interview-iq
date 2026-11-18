@@ -183,6 +183,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-17 | security | Phase 4B preparation: review and commit Phase 4A locally; preserve protected personal Hobby Preview and inert Production bootstrap; present exact mocked update for approval before any push/deploy; no live inference or paid services | User preparation and approval boundary |
 
+| 2026-11-18 | security | Correct Phase 5 Redis URL equivalence locally; preserve exact HTTPS endpoint/authentication and budgets; full suite/audits/scans and configured PING preflight; commit on feat/streamlit-vercel-backend only; replacement Preview requires approval, no push/deploy/inference | User guard-correction scope |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 

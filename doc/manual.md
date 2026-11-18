@@ -217,4 +217,6 @@ The supported runtime pins have been patched; screens and interview behaviour ar
 
 ## Anonymous access limits
 
+Phase 5 remains a separate, protected synthetic test with no public UI change. The Redis guard correction is verified locally; the [replacement Preview proposal](phase5-replacement-preview.md) requires approval before deployment or live inference.
+
 With Phase 4A enabled, each anonymous Streamlit connection receives a private, expiring identity without login. The approved pilot allows 10 admitted API requests/minute and 100/day per identity, with shared caps of 30/minute, 1,000/day and four active requests. A limit or busy response asks you to wait; resetting the browser connection can create a new identity and does not reset the application caps. See [details and limitations](phase4a-report.md).

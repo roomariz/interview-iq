@@ -241,7 +241,8 @@ Open two browser sessions: answers, context and adaptation must remain independe
 Check `/docs` for schemas and authentication; health remains unauthenticated.
 Do not use real providers for manual checks without explicit permission.
 
-## Phase 3A readiness
+## Phase 3A readiness and Phase 5 controls
+Run `tests/test_phase5*.py` with `PHASE5_REDIS_PORT=16389` and disposable Redis. URL regressions reject different endpoints; `scripts/verify_phase5_redis.py` uses four configured PINGs only when explicitly run. See [replacement verification](phase5-replacement-preview.md); deployment/inference await approval.
 
 Run `python -m pytest tests/test_phase3_deadlines.py tests/test_phase3_rate_limit.py tests/test_phase3b_deployment.py -q`.
 With mocked providers, exhaust a short deadline and check the retry notice.
