@@ -25,6 +25,8 @@ def reset_question_generation_state(state):
 
 
 def begin_question_generation(state):
+    if isinstance(state.get("question_generation_future"), Future):
+        return
     reset_question_generation_state(state)
     client = InterviewAPIClient()  # Resolve server-side Streamlit secrets before starting a worker.
     payload = {key: state.get(key, default) for key, default in {
@@ -58,16 +60,19 @@ def poll_question_generation(state):
     state["question_generation_future"] = None
     try:
         result = future.result()
+        questions = result.get("questions", [])
+        if not questions or any(not isinstance(item, dict) or not str(item.get("question", "")).strip()
+                                for item in questions):
+            raise BackendError("The interview service returned an incomplete questionnaire.")
     except Exception as exc:
         message = str(exc) if isinstance(exc, BackendError) else "Model unavailable. Please try again."
         state["question_job"] = {"status": "failed", "result": [], "error": message, "started_at": None}
         for key in ("question_generation_error", "question_generation_notice", "setup_error"):
             state[key] = message
-        for key in ("is_loading", "launch_question_view", "has_active_session", "question_generation_ready"):
+        for key in ("is_loading", "launch_question_view", "question_generation_ready"):
             state[key] = False
-        state["current_screen"] = "setup"
+        state["current_screen"] = "generating_question"
         return True
-    questions = result["questions"]
     state["prepared_questions"] = questions
     state["base_questions"] = list(questions)
     state["current_question"] = questions[0]["question"]

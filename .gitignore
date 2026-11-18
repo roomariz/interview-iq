@@ -28,3 +28,4 @@ venv/
 debug_*.png
 debug_full_*.png
 .phase4a-local/
+.verification-local/

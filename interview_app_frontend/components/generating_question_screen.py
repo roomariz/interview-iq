@@ -131,3 +131,7 @@ def render_generating_question() -> None:
         notice = str(state.get("question_generation_notice", "")).strip()
         if notice:
             st.info(notice)
+        if state.get("question_job", {}).get("status") == "failed":
+            if st.button("Retry question", key="retry_question_generation"):
+                begin_question_generation(state)
+                st.rerun()

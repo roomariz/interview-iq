@@ -185,6 +185,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-18 | security | Correct Phase 5 Redis URL equivalence locally; preserve exact HTTPS endpoint/authentication and budgets; full suite/audits/scans and configured PING preflight; commit on feat/streamlit-vercel-backend only; replacement Preview requires approval, no push/deploy/inference | User guard-correction scope |
 
+| 2026-11-18 | security | Investigate and fix question progression locally on feat/streamlit-vercel-backend; preserve adaptation/security, commit separately, prepare one mocked replacement for approval; no push/deploy/main merge/live inference/paid services | User Phase 6A scope |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 
