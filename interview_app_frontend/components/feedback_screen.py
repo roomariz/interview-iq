@@ -99,6 +99,9 @@ def render_feedback() -> None:
     takeaway = build_key_takeaway(view_model)
     reliability_card = build_reliability_card(state.get("feedback"), view_model)
     display_model = dict(view_model)
+    if state.get("_demonstration"):
+        from interview_app_frontend.services.community_cloud import DEMONSTRATION_NOTICE
+        display_model["demonstration"] = {"mocked": True, "notice": DEMONSTRATION_NOTICE}
     display_model["follow_up"] = follow_up
     display_model["score_consistency"] = consistency
     display_model["strengths"] = strengths

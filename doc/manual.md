@@ -224,3 +224,7 @@ With Phase 4A enabled, each anonymous Streamlit connection receives a private, e
 ## Timeout recovery verification
 
 Timeouts can retain concurrency capacity until an in-flight transport exits or its Redis lease expires. No counters need manual clearing. Local five-question recovery and remaining hosted limits are recorded in [the lease investigation](redis-lease-investigation.md).
+
+## Community Cloud demonstration
+
+The proposed private demonstration uses mocked questions and feedback; its scores are illustrative. It is not deployed yet. Keep the same session while waiting for a quota window or timeout, and use Retry question only after a confirmed generation error. See [deployment preparation](streamlit-community-cloud-proposal.md).

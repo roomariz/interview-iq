@@ -77,15 +77,19 @@ def _apply_route_from_query_params() -> None:
         st.session_state._query_route_applied = True
 
 
-def main() -> None:
+def main(*, demonstration: bool = False) -> None:
     setup_logging()
     LOGGER.info("APP_START", extra={"version": "1.0"})
     st.set_page_config(page_title="InterviewIQ", layout="wide")
     clean_widget_state()
     ensure_session_state()
+    st.session_state._demonstration = demonstration
     LOGGER.info("Resolved LLM provider: %s model: %s", LLM_PROVIDER, MODEL_NAME)
     _apply_route_from_query_params()
     inject_styles()
+    if demonstration:
+        from interview_app_frontend.services.community_cloud import DEMONSTRATION_NOTICE
+        st.warning(DEMONSTRATION_NOTICE)
     if st.session_state.get("current_screen") == "question":
         components.html(ANSWER_PASTE_FIX, height=0, width=0)
     render_screen()

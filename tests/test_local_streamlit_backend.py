@@ -55,7 +55,7 @@ def test_streamlit_interview_with_local_fastapi(monkeypatch, count, fail_second)
             "from interview_app_frontend.app import main\n"
             "if st.session_state.pop('_test_start', False):\n"
             "    start_interview()\n"
-            "main()\n", default_timeout=10,
+            "main(demonstration=True)\n", default_timeout=10,
         ).run()
         assert not ui.exception
         assert ui.button(key="welcome_start_setup")
@@ -104,6 +104,11 @@ def test_streamlit_interview_with_local_fastapi(monkeypatch, count, fail_second)
                 ui.run()
             assert not ui.exception
             assert ui.session_state["current_screen"] == "feedback"
+            assert "Demonstration only" in ui.warning[0].value
+            import json
+            report = json.loads(ui.code[0].value)
+            assert report["demonstration"]["mocked"] is True
+            assert "not a verified live AI assessment" in report["demonstration"]["notice"]
             ui.button(key="feedback_next_question").click().run()
         assert ui.session_state["current_screen"] == "summary"
         assert len(ui.session_state["answers"]) == total
@@ -118,6 +123,7 @@ def test_streamlit_interview_with_local_fastapi(monkeypatch, count, fail_second)
             expected = sum(answer["scores"][dimension] for answer in ui.session_state["answers"]) / total
             assert average == round(expected, 1)
         assert failures == ([2] if fail_second else [])
+        assert "Demonstration only" in ui.warning[0].value
         assert calls[1]["previous_questions"]
         assert not ui.exception
     finally:

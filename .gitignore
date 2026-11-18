@@ -20,7 +20,8 @@ venv/
 115.md
 .codex/
 .vercel/
-.streamlit/
+.streamlit/*
+!.streamlit/config.toml
 .vscode/
 .gstack/
 .gstack/

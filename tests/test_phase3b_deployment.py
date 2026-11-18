@@ -13,6 +13,7 @@ from interview_app_frontend.services.api_client import InterviewAPIClient
 
 def test_preview_bypass_is_header_only_and_redirects_are_blocked(monkeypatch):
     monkeypatch.setenv("VERCEL_AUTOMATION_BYPASS_SECRET", "preview-test-bypass")
+    monkeypatch.setenv("BACKEND_VISITOR_SIGNING_KEY", "synthetic-signing-key-00000000000000")
     requests = []
 
     def redirect(request):
@@ -27,6 +28,10 @@ def test_preview_bypass_is_header_only_and_redirects_are_blocked(monkeypatch):
     assert len(requests) == 1
     assert requests[0].headers["x-vercel-protection-bypass"] == "preview-test-bypass"
     assert requests[0].headers["Authorization"] == "Bearer backend-test-secret"
+    from shared.visitor_identity import validate
+    assert validate(requests[0].headers["X-Interview-Visitor"], "synthetic-signing-key-00000000000000")
+    assert "preview-test-bypass" not in str(requests[0].url)
+    assert "backend-test-secret" not in str(requests[0].url)
     assert b"preview-test-bypass" not in requests[0].content
     assert b"backend-test-secret" not in requests[0].content
 
@@ -37,11 +42,18 @@ def test_preview_bypass_is_optional(monkeypatch):
     assert client.preview_bypass == ""
 
 
-def test_cloud_entrypoint_renders_existing_welcome_screen():
+def test_cloud_entrypoint_renders_existing_welcome_screen(monkeypatch):
+    from interview_app_frontend.services.community_cloud import MOCK_BACKEND_URL
+    for name, value in {"BACKEND_API_URL": MOCK_BACKEND_URL,
+                        "BACKEND_API_SECRET": "a" * 48,
+                        "BACKEND_VISITOR_SIGNING_KEY": "b" * 48,
+                        "VERCEL_AUTOMATION_BYPASS_SECRET": "synthetic-bypass"}.items():
+        monkeypatch.setenv(name, value)
     entrypoint = Path(__file__).resolve().parents[1] / "deployment/streamlit/app.py"
     ui = AppTest.from_file(str(entrypoint)).run()
     assert not ui.exception
     assert ui.button(key="welcome_start_setup")
+    assert "Demonstration only" in ui.warning[0].value
 
 
 def test_cloud_frontend_manifest_resolves_to_frontend_only_requirements():

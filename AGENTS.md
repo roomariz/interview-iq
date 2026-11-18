@@ -191,6 +191,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-18 | security | Approved one isolated protected mocked workflow recovery Preview on roomas-projects; reviewed corrections commit and feature push only; maximum 14 admissions/26 verification HTTP attempts, zero spend/live inference; preserve old deployments/bootstrap/main and stop after report, no Streamlit release | Explicit hosted recovery execution approval |
 
+| 2026-11-18 | security | Prepare Community Cloud frontend against verified dpl_3XLLkftWMZQx7U8bJwjXJG6NraRt/e247aba; private server secrets, demo-labelled UI/downloads, preserve quotas and leases; local tests/audits/scans and approval proposal only, no deploy/push/main/Production/live inference/paid infrastructure | User Community Cloud preparation scope |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 
