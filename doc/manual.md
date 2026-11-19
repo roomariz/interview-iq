@@ -227,4 +227,4 @@ Timeouts can retain concurrency capacity until an in-flight transport exits or i
 
 ## Community Cloud demonstration
 
-The proposed private demonstration uses mocked questions and feedback; its scores are illustrative. It is not deployed yet. Keep the same session while waiting for a quota window or timeout, and use Retry question only after a confirmed generation error. See [deployment preparation](streamlit-community-cloud-proposal.md).
+The private demonstration uses mocked questions and feedback; its scores are illustrative. The hosted app is inactive pending the locally verified startup correction; missing backend credentials display a configuration notice. Keep the same session while waiting for a quota window or timeout, and use Retry question only after a confirmed generation error. See [startup correction and rebuild](streamlit-startup-correction.md).

@@ -193,6 +193,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-18 | security | Prepare Community Cloud frontend against verified dpl_3XLLkftWMZQx7U8bJwjXJG6NraRt/e247aba; private server secrets, demo-labelled UI/downloads, preserve quotas and leases; local tests/audits/scans and approval proposal only, no deploy/push/main/Production/live inference/paid infrastructure | User Community Cloud preparation scope |
 
+| 2026-11-19 | security | Correct nested Streamlit imports locally, verify clean frontend-only startup without secrets and mocked workflows, commit separately on feature branch; no push/rebuild, credential installation, privacy changes, Vercel changes, live inference or paid services | User startup-correction scope |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 
