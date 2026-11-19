@@ -21,7 +21,7 @@ def _apply_answer_feedback(state, question: str, answer: str, feedback: dict) ->
             "scores": dict(view_model.get("scores", {})),
             "labels": dict(view_model.get("labels", {})) if isinstance(view_model.get("labels"), dict) else {},
             "overall_decision": str(view_model.get("overall_decision", "")).strip(),
-            "summary": str(view_model.get("feedback", {}).get("summary", "")).strip() if isinstance(view_model.get("feedback"), dict) else "",
+            "summary": view_model["summary"],
             "strengths": list(view_model.get("strengths", [])) if isinstance(view_model.get("strengths"), list) else [],
             "key_issues": list(view_model.get("key_issues", [])) if isinstance(view_model.get("key_issues"), list) else [],
             "improvements": list(view_model.get("improvements", [])) if isinstance(view_model.get("improvements"), list) else [],

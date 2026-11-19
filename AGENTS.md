@@ -195,6 +195,8 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-19 | security | Correct nested Streamlit imports locally, verify clean frontend-only startup without secrets and mocked workflows, commit separately on feature branch; no push/rebuild, credential installation, privacy changes, Vercel changes, live inference or paid services | User startup-correction scope |
 
+| 2026-11-19 | security | Correct score presentation and recap locally; inspect hosted browser read-only, report header/WebSocket gaps, run mocked regressions/audits/scans and propose frontend update only; no push/deploy/main/Vercel/secrets/live inference/paid services | User final UI verification scope |
+
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`
 

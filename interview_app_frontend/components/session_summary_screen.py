@@ -1,3 +1,5 @@
+from html import escape
+
 import streamlit as st
 
 from interview_app_frontend.state.session_manager import exit_session, restart_session
@@ -65,17 +67,17 @@ def _render_latest_question_recap(summary: dict) -> None:
     recap = summary.get("latest_question_recap", {})
     if not isinstance(recap, dict) or not recap:
         return
-    strengths = recap.get("strengths", [])
-    improvements = recap.get("improvement_areas", [])
-    question = recap.get("question", "").strip()
-    decision = recap.get("decision", "").strip()
+    strengths = [escape(str(item)) for item in recap.get("strengths", [])]
+    improvements = [escape(str(item)) for item in recap.get("improvement_areas", [])]
+    question = escape(recap.get("question", "").strip())
+    decision = escape(recap.get("decision", "").strip())
     st.markdown("### Latest Question Recap")
     st.markdown(
         f"""
         <div class="summary-recap">
             <div class="summary-recap__row"><strong>Question:</strong> {question or 'Not available'}</div>
             <div class="summary-recap__row"><strong>Outcome:</strong> {decision or 'Not available'}</div>
-            <div class="summary-recap__row"><strong>Key takeaway:</strong> {recap.get('summary', '').strip() or 'No recap captured.'}</div>
+            <div class="summary-recap__row"><strong>Key takeaway:</strong> {escape(recap.get('summary', '').strip()) or 'No recap captured.'}</div>
             <div class="summary-recap__row"><strong>Strengths:</strong> {', '.join(str(item) for item in strengths) or 'None recorded.'}</div>
             <div class="summary-recap__row"><strong>Improvement areas:</strong> {', '.join(str(item) for item in improvements) or 'None recorded.'}</div>
         </div>
@@ -99,7 +101,7 @@ def _render_score_breakdown(summary: dict) -> None:
     html_parts = ['<div class="score-breakdown">']
     for dim, label in dimension_labels.items():
         value = scores.get(dim, 0)
-        band = next((b for threshold, b in score_bands.items() if value >= threshold), "Needs Work")
+        band = next((b for threshold, b in reversed(score_bands.items()) if value >= threshold), "Needs Work")
         bar_width = int(value / 10 * 20)
         bar = "█" * bar_width + "░" * (20 - bar_width)
         html_parts.append(

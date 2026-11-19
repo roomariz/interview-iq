@@ -1,6 +1,8 @@
 from collections.abc import Mapping
 from typing import Any
 
+from interview_app_frontend.utils.feedback_model import normalise_feedback_payload
+
 REQUIRED_DIMENSIONS = frozenset(("relevance", "structure", "specificity", "communication", "problem_solving_approach"))
 
 
@@ -120,7 +122,7 @@ def _extract_strengths(feedback) -> list[str]:
 def _extract_improvements(feedback) -> list[str]:
     if isinstance(feedback, dict):
         improvements = feedback.get("improvements", [])
-        if isinstance(improvements, list):
+        if isinstance(improvements, list) and improvements:
             return [str(i) for i in improvements if i]
         key_issues = feedback.get("key_issues", [])
         if isinstance(key_issues, list):
@@ -149,14 +151,21 @@ def _build_latest_question_recap(answers, latest_feedback) -> dict[str, Any]:
     latest_answer = next((answer for answer in reversed(answers) if isinstance(answer, Mapping)), {})
     if not latest_answer:
         return {}
+    if isinstance(latest_feedback, Mapping) and all(
+        not latest_feedback.get(key) or latest_feedback[key] == latest_answer.get(key)
+        for key in ("question", "answer")
+    ):
+        latest_feedback = normalise_feedback_payload(latest_feedback)
+    else:
+        latest_feedback = {}
     feedback_strengths = _extract_strengths(latest_feedback)
     feedback_improvements = _extract_improvements(latest_feedback)
     return {
         "question": str(latest_answer.get("question", "")).strip(),
         "decision": str(latest_answer.get("overall_decision", "")).strip(),
-        "summary": str(latest_answer.get("summary", "")).strip(),
+        "summary": str(latest_answer.get("summary", "")).strip() or latest_feedback.get("summary", ""),
         "strengths": (list(latest_answer.get("strengths", [])) if isinstance(latest_answer.get("strengths"), list) else []) or feedback_strengths,
-        "improvement_areas": (list(latest_answer.get("improvements", [])) if isinstance(latest_answer.get("improvements"), list) else []) or feedback_improvements,
+        "improvement_areas": _extract_improvements(latest_answer) or feedback_improvements,
     }
 
 
