@@ -2,7 +2,7 @@
 
 ## Manual Checks
 
-1. Follow [Phase 2 local setup](phase2-integration.md): start FastAPI on port 8000 and Streamlit separately, with matching server secrets and `BACKEND_API_URL`.
+1. Follow [HTTP backend separation local setup](http-backend-integration.md): start FastAPI on port 8000 and Streamlit separately, with matching server secrets and `BACKEND_API_URL`.
 2. Confirm the welcome heading and browser tab title both show InterviewIQ.
 3. Click `Start Setup`; confirm the setup screen appears and its left panel shows InterviewIQ aligned left beside the logo.
 4. Toggle `st.session_state.has_active_session` to `True` and refresh the app.
@@ -136,16 +136,16 @@
 - Run `pytest tests/test_feedback_screen.py` to verify feedback formatting, score mapping, and feedback routing.
 - Confirm the direct evaluator path still uses a single OpenRouter client call, while out-of-scope answers short-circuit to the hard relevance gate.
 
-## Phase 1 offline verification
+## Provider integration offline verification
 
 1. Install `requirements-dev.txt` into the project virtual environment.
-2. Run the focused pytest command in [Phase 1 integration](phase1-integration.md).
+2. Run the focused pytest command in [Provider integration integration](provider-integration.md).
    Calls are mocked and external socket connections are blocked, including during
    background worker shutdown.
 3. Run `python -m uvicorn api.index:app --reload` and open
    `http://127.0.0.1:8000/api/health`; expect `{"status":"ok"}` without LLM credentials.
 4. Launch Streamlit as usual and verify the existing setup, question, feedback and
-   example-answer screens. No frontend request should target FastAPI in Phase 1.
+   example-answer screens. No frontend request should target FastAPI in Provider integration.
 5. Use mocked workflow tests for success, invalid JSON, relevance checks,
    authentication errors, timeouts, rate limits and opt-in OpenRouter fallback.
 6. Confirm exhausted evaluations display the existing retry error and do not save
@@ -227,11 +227,11 @@ and no hallucination classification. Check supported coaching remains visible,
 unsupported advice has a recorded reason, and rollback/disable follow-ups are short.
 Criteria must match the question type. Failed coaching repair must not alter scores.
 
-## Phase 2 HTTP verification
+## HTTP backend separation and Community Cloud verification
 
-Run `.venv/Scripts/python.exe -m pytest tests/test_phase2_api.py tests/test_phase2_client.py tests/test_phase2_workflow.py tests/test_phase2_llm_integration.py tests/test_phase2_local_streamlit.py -q`.
+Run `.venv/Scripts/python.exe -m pytest tests/test_interview_api.py tests/test_interview_api_client.py tests/test_backend_workflow.py tests/test_backend_llm_integration.py tests/test_local_streamlit_backend.py -q`.
 These tests mock providers; the local Streamlit test uses a real Uvicorn loopback server.
-See [results and known baseline failures](phase2-test-results.md).
+See [results and known baseline failures](http-backend-test-results.md). For mocked Community Cloud, follow [the checks and hosted blocker](streamlit-community-cloud-verification.md); verify the notice on every screen and in downloaded JSON.
 Complete an interview with a mocked backend: setup, question, answer, feedback,
 next question and summary. Check provider metadata and follow-up remain visible.
 Try an invalid answer and oversized CV; neither should produce scores.
@@ -241,10 +241,10 @@ Open two browser sessions: answers, context and adaptation must remain independe
 Check `/docs` for schemas and authentication; health remains unauthenticated.
 Do not use real providers for manual checks without explicit permission.
 
-## Phase 3A readiness and Phase 5 controls
-Run `tests/test_phase5*.py` with `PHASE5_REDIS_PORT=16389` and disposable Redis. URL regressions reject different endpoints; `scripts/verify_phase5_redis.py` uses four configured PINGs only when explicitly run. See [replacement verification](phase5-replacement-preview.md); deployment/inference await approval.
+## Backend readiness readiness and Free-model verification controls
+Run `tests/test_free_model_*.py and tests/test_redis_endpoint_guard.py` with `LIVE_VERIFICATION_REDIS_PORT=16389` and disposable Redis. URL regressions reject different endpoints; `scripts/verify_redis_endpoint_guard.py` uses four configured PINGs only when explicitly run. See [replacement verification](free-model-preview-replacement-proposal.md); deployment/inference await approval.
 
-Run `python -m pytest tests/test_phase3_deadlines.py tests/test_phase3_rate_limit.py tests/test_phase3b_deployment.py -q`.
+Run `python -m pytest tests/test_backend_deadlines.py tests/test_shared_rate_limits.py tests/test_preview_configuration.py -q`.
 With mocked providers, exhaust a short deadline and check the retry notice.
 Across two instances, verify a combined 429 quota and 503 on shared-service outage.
-See [Phase 3A verification](phase3a-test-results.md) and [real Redis checks](phase3b-upstash-setup.md); [dependency upgrade verification](dependency-security-review.md) and [reconciled baseline tests](test-failure-assessment.md). The opt-in Redis script now checks expiry and invalid credentials; no live provider calls authorised. Follow [Phase 4A verification](phase4a-verification.md) for signed identities, global quotas, real Redis multi-process admission, lease expiry and logging privacy. Run the new mock progression, recovery, local Streamlit and packaged artefact tests described in [question progression verification](question-progression-investigation.md). See [lease lifecycle verification](redis-lease-investigation.md) for isolated local Redis cancellation/crash tests, the full five-question workflow and corrected harness configuration. Community Cloud preparation now targets the verified mock; see [configuration and runbook](streamlit-community-cloud-proposal.md). Run `python -m pytest tests/test_streamlit_entrypoint.py -q` to check isolated imports from three working directories; see [startup and rebuild verification](streamlit-startup-correction.md). Run `python -m pytest tests/test_summary_presentation_regression.py -q`; check 6.9/7/8.9/9 boundaries, partial and five-answer recaps, matching legacy feedback and escaped text. Hosted HTTP headers/WebSocket inspection remains incomplete; see [findings and update proposal](summary-ui-consistency-verification.md).
+See [Backend readiness verification](backend-readiness-test-results.md) and [real Redis checks](managed-redis-setup.md); [dependency upgrade verification](dependency-security-review.md) and [reconciled baseline tests](test-failure-assessment.md). The opt-in Redis script now checks expiry and invalid credentials; no live provider calls authorised. Follow [Anonymous access controls verification](anonymous-access-verification.md) for signed identities, global quotas, real Redis multi-process admission, lease expiry and logging privacy. Run the new mock progression, recovery, local Streamlit and packaged artefact tests described in [question progression verification](question-progression-investigation.md). See [lease lifecycle verification](redis-lease-investigation.md) for isolated local Redis cancellation/crash tests, the full five-question workflow and corrected harness configuration. Community Cloud preparation now targets the verified mock; see [configuration and runbook](streamlit-community-cloud-proposal.md). Run `python -m pytest tests/test_streamlit_entrypoint.py -q` to check isolated imports from three working directories; see [startup and rebuild verification](streamlit-startup-correction.md). Run `python -m pytest tests/test_summary_presentation_regression.py -q`; check 6.9/7/8.9/9 boundaries, partial and five-answer recaps, matching legacy feedback and escaped text. Hosted HTTP headers/WebSocket inspection remains incomplete; see [findings and update proposal](summary-ui-consistency-verification.md).

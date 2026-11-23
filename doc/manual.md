@@ -2,7 +2,9 @@
 
 ## Overview
 
-Streamlit now communicates with FastAPI over authenticated HTTP. Interview state stays in Streamlit; the screens, scores and provider choices are preserved. See [Phase 2 setup](phase2-integration.md) for both service commands and server-side secrets.
+The proposed Community Cloud app is a demonstration using mocked responses. A persistent notice labels questions, scores, confidence, coaching and summaries as illustrative; downloaded evaluation JSON carries the same notice. Use synthetic data. Deployment is pending the [Community Cloud proposal](streamlit-community-cloud-proposal.md), including its hosted workflow blocker.
+
+Streamlit now communicates with FastAPI over authenticated HTTP. Interview state stays in Streamlit; the screens, scores and provider choices are preserved. See [HTTP backend separation setup](http-backend-integration.md) for both service commands and server-side secrets.
 
 ## How To Use
 
@@ -132,7 +134,7 @@ Streamlit now communicates with FastAPI over authenticated HTTP. Interview state
 - Backend report download now produces a JSON session report payload for the summary flow.
 - Backend session summary now aggregates scores, duration, strengths, and next steps to match the session summary mockup.
 
-## Phase 1 provider configuration
+## Provider integration provider configuration
 
 The interview screens and session storage are unchanged. Administrators can set
 `LLM_PROVIDER=ollama`, `OLLAMA_API_KEY`, `OLLAMA_MODEL=gemma4:cloud` and
@@ -148,7 +150,7 @@ locally; it is not guaranteed by the model. Failed evaluations request a retry
 without assigning scores. The API currently provides only `/api/health`;
 Streamlit continues to call the existing services directly.
 
-See [Phase 1 integration](phase1-integration.md) for setup and limitations.
+See [Provider integration integration](provider-integration.md) for setup and limitations.
 
 ## Direct Grok provider
 
@@ -201,15 +203,15 @@ and candidate performance are separate signals. Supported coaching stays visible
 at low confidence; missing coaching receives one feedback-only repair attempt.
 Follow-ups probe an actual answer decision without repeating the whole question.
 
-## Phase 3A service limits
+## Backend readiness service limits
 
 Interview requests now share a configurable deadline. Expiry shows a retry message
 without recording scores. Quota-limited services ask you to wait. Screens and
-session ownership remain unchanged. See [production readiness](phase3a-readiness.md).
+session ownership remain unchanged. See [production readiness](backend-production-readiness.md).
 
 ## Cloud test preparation
 
-See [Phase 3B proposal](phase3b-proposal.md) and [free Redis setup](phase3b-upstash-setup.md). Real Redis verification passed; Git publication and Preview deployment await approval.
+See [Protected Preview proposal](protected-preview-proposal.md) and [free Redis setup](managed-redis-setup.md). Real Redis verification passed; Git publication and Preview deployment await approval.
 
 ## Dependency security update
 
@@ -217,9 +219,9 @@ The supported runtime pins have been patched; screens and interview behaviour ar
 
 ## Anonymous access limits
 
-Phase 5 remains a separate, protected synthetic test with no public UI change. The Redis guard correction is verified locally; the [replacement Preview proposal](phase5-replacement-preview.md) requires approval before deployment or live inference.
+Free-model verification remains a separate, protected synthetic test with no public UI change. The Redis guard correction is verified locally; the [replacement Preview proposal](free-model-preview-replacement-proposal.md) requires approval before deployment or live inference.
 
-With Phase 4A enabled, each anonymous Streamlit connection receives a private, expiring identity without login. The approved pilot allows 10 admitted API requests/minute and 100/day per identity, with shared caps of 30/minute, 1,000/day and four active requests. A limit or busy response asks you to wait; resetting the browser connection can create a new identity and does not reset the application caps. See [details and limitations](phase4a-report.md). Question generation errors now keep your interview at the same step; use Retry question on the preparing screen. See [question progression](question-progression-investigation.md).
+With Anonymous access controls enabled, each anonymous Streamlit connection receives a private, expiring identity without login. The approved pilot allows 10 admitted API requests/minute and 100/day per identity, with shared caps of 30/minute, 1,000/day and four active requests. A limit or busy response asks you to wait; resetting the browser connection can create a new identity and does not reset the application caps. See [details and limitations](anonymous-access-controls-report.md). Question generation errors now keep your interview at the same step; use Retry question on the preparing screen. See [question progression](question-progression-investigation.md).
 
 ## Timeout recovery verification
 

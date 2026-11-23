@@ -22,7 +22,7 @@ not erase that uncertainty. No push, deployment, paid service or live LLM call r
   `tests/test_readiness_rate_limit.py` adds three cases; the Redis verification
   script gains diagnostics, invalid-token and expiry checks; AGENTS records scope.
 - Documentation: `doc/manual.md`, `doc/developer-manual.md`, `doc/test-manual.md`
-  and `doc/phase3b-proposal.md` link to/currently reflect this assessment.
+  and `doc/protected-preview-proposal.md` link to/currently reflect this assessment.
 - Only source tests, the verification script and documentation are committed.
   Dotenv, caches, environments, audit JSON and smoke scripts remain ignored.
   No application modules, manifests, API contracts, prompts or rankings changed.

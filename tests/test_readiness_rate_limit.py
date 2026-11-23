@@ -5,7 +5,7 @@ import asyncio
 import httpx
 import pytest
 
-from tests.test_phase3_rate_limit import application, config  # noqa: F401
+from tests.test_shared_rate_limits import application, config  # noqa: F401
 
 
 @pytest.mark.usefixtures("config")

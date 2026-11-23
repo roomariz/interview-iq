@@ -2,7 +2,7 @@
 
 ## Scope
 
-Phase 2 separates Streamlit and FastAPI through authenticated HTTP; see [contracts, local setup and Vercel review](phase2-integration.md), [file inventory](phase2-files.md) and [test results](phase2-test-results.md). CI pins Ubuntu 24.04 for Playwright 1.53.x.
+HTTP backend separation separates Streamlit and FastAPI through authenticated HTTP; see [contracts, local setup and Vercel review](http-backend-integration.md), [file inventory](http-backend-file-inventory.md) and [test results](http-backend-test-results.md). CI pins Ubuntu 24.04 for Playwright 1.53.x.
 
 ## Files
 
@@ -175,7 +175,7 @@ streamlit run app.py
 - `summarise_performance()` now aggregates per-dimension averages and session metadata for the summary screen.
 - The session summary now also carries readable focus areas so the UI can show the weakest themes without exposing internal scoring weights.
 
-## FastAPI and Ollama Cloud: Phase 1
+## FastAPI and Ollama Cloud: Provider integration
 
 - `api/index.py` exposes a credential-free `GET /api/health`; run
   `python -m uvicorn api.index:app --reload` locally. Streamlit is not connected to it.
@@ -201,7 +201,7 @@ streamlit run app.py
   Environment-only credentials remain supported. Never log either key value.
   Existing OpenRouter model and timeout precedence remains unchanged.
 
-See [Phase 1 integration](phase1-integration.md) for configuration and checks.
+See [Provider integration integration](provider-integration.md) for configuration and checks.
 
 ## Direct xAI selection
 
@@ -244,7 +244,7 @@ Role-only grounding distinguishes named tools from generic capabilities and uses
 word boundaries. Retry errors include the question index and unsupported tool.
 Backup generation selects scenario-specific text and focus before validation.
 
-## Reliability references: Phase 5
-The optional `deployment/phase5_*` overlays enforce free-only routing and atomic budgets; normal startup does not install them. `phase5_redis.py` compares validated HTTPS roots and effective ports, accepting only empty/root paths; redirects stay disabled. See [replacement preparation](phase5-replacement-preview.md).
+## Reliability references: Free-model verification and Community Cloud
+The optional `deployment/free_model_* and the Redis/workflow guards` overlays enforce free-only routing and atomic budgets; normal startup does not install them. `redis_endpoint_guard.py` compares validated HTTPS roots and effective ports, accepting only empty/root paths; redirects stay disabled. See [replacement preparation](free-model-preview-replacement-proposal.md). Community Cloud: see [deployment gates](streamlit-community-cloud-proposal.md) and [verification](streamlit-community-cloud-verification.md).
 
-See [relevance](relevance-evaluation-fix.md), [feedback](evaluation-reliability-fix.md), [confidence](evaluation-confidence-correction.md) and [Phase 3A production configuration](phase3a-readiness.md), [Phase 3B proposal](phase3b-proposal.md) and [Redis setup](phase3b-upstash-setup.md) and [patched dependencies](dependency-security-review.md) and [local readiness](final-deployment-readiness.md), including quota scope and the unresolved historical Redis anomaly. See [Phase 4A anonymous quotas, leases and private logging](phase4a-report.md) for the current controls and proposed Preview configuration. The request-aware mock preserves adaptive generation; frontend retry preserves the current step. See [implementation and verification](question-progression-investigation.md). See [lease lifecycle verification](redis-lease-investigation.md) for isolated local Redis cancellation/crash tests, the full five-question workflow and corrected harness configuration. Community Cloud preparation now targets the verified mock; see [configuration and runbook](streamlit-community-cloud-proposal.md). The nested cloud entrypoint resolves the repository root from its own file before importing namespace packages; see [startup correction](streamlit-startup-correction.md). Summary UI correction: store the normalised top-level summary, backfill blank recaps only from compatible feedback, use recorded issues when improvements are absent, escape recap text and check score bands in descending order. Scoring and API behaviour are unchanged; see [verification](summary-ui-consistency-verification.md).
+See [relevance](relevance-evaluation-fix.md), [feedback](evaluation-reliability-fix.md), [confidence](evaluation-confidence-correction.md) and [Backend readiness production configuration](backend-production-readiness.md), [Protected Preview proposal](protected-preview-proposal.md) and [Redis setup](managed-redis-setup.md) and [patched dependencies](dependency-security-review.md) and [local readiness](final-deployment-readiness.md), including quota scope and the unresolved historical Redis anomaly. See [Anonymous access controls anonymous quotas, leases and private logging](anonymous-access-controls-report.md) for the current controls and proposed Preview configuration. The request-aware mock preserves adaptive generation; frontend retry preserves the current step. See [implementation and verification](question-progression-investigation.md). See [lease lifecycle verification](redis-lease-investigation.md) for isolated local Redis cancellation/crash tests, the full five-question workflow and corrected harness configuration. Community Cloud preparation now targets the verified mock; see [configuration and runbook](streamlit-community-cloud-proposal.md). The nested cloud entrypoint resolves the repository root from its own file before importing namespace packages; see [startup correction](streamlit-startup-correction.md). Summary UI correction: store the normalised top-level summary, backfill blank recaps only from compatible feedback, use recorded issues when improvements are absent, escape recap text and check score bands in descending order. Scoring and API behaviour are unchanged; see [verification](summary-ui-consistency-verification.md).

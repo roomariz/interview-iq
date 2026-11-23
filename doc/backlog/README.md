@@ -1,18 +1,18 @@
 # Backlog
 
-This folder contains the phase-based delivery plan for the Interview Practice App.
+This folder contains the feature delivery plan for the Interview Practice App.
 
-Phase mapping:
-- Phase 1: MVP base interview loop
-- Phase 2: Personalisation and adaptation
-- Phase 3: Advanced evaluation and reporting
-- Phase 4: Growth and extensions
+Workstreams:
+- MVP: base interview loop
+- Personalisation and adaptation
+- Advanced evaluation and reporting
+- Growth and extensions
 
 ## Priority Key
 
-- High: must be done first for the current phase
+- High: must be done first for the current workstream
 - Medium: important, but can follow the high-priority items
-- Low: useful polish or post-phase work
+- Low: useful polish or later work
 
 ## Workstream Prefixes
 
@@ -31,10 +31,10 @@ Phase mapping:
 
 ## Phase Files
 
-- `phase-1-mvp.md`
-- `phase-2-personalisation.md`
-- `phase-3-advanced-evaluation.md`
-- `phase-4-growth-and-extensions.md`
+- `mvp.md`
+- `personalisation.md`
+- `advanced-evaluation.md`
+- `growth-and-extensions.md`
 
 ## Living Documentation
 

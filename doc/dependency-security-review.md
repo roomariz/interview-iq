@@ -3,7 +3,7 @@
 Completed locally on `feat/streamlit-vercel-backend`, based on merge `622e11d`.
 No push, merge into main, deployment, paid service or live inference was performed.
 The original findings remain in [the advisory inventory](dependency-advisory-inventory.md)
-and [the publication-time report](phase3b-publication-plan.md); they were not erased.
+and [the publication-time report](preview-publication-plan.md); they were not erased.
 
 ## Original five affected packages
 

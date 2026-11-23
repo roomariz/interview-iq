@@ -179,13 +179,35 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-17 | security | Resolve baseline tests and assess Redis, anonymous quotas and readiness; commit locally only, no push, deployment or live LLM calls; quota redesign requires approval | User final-verification scope |
 
+| 2026-11-17 | architecture | Protected mocked Preview owner is roomas-projects (Hobby), confirmed from the user-supplied dashboard; never use astraut-solutions-projects; authorise connector access before creation/deployment; retain no-live-inference/free-tier restrictions | User deployment-owner correction |
+
+| 2026-11-17 | architecture | Preview-first investigation is read-only: no deployment or cloud configuration changes; preserve personal Hobby owner, mock artifact and Preview secrets; report supported options and stop for approval | User investigation-only scope |
+
+| 2026-11-17 | security | User permits one inert protected bootstrap record in the existing personal project after protection verification; keep InterviewIQ mock app Preview-only, no live inference/paid services, preserve Preview secrets | Conditional protected-bootstrap approval |
+
 | 2026-11-17 | security | Phase 4A local only: signed anonymous quotas 10/minute and 100/day; global 30/minute and 1,000/day; distributed leases and private logging; mocked providers, no push/deploy/Production changes | User implementation scope and approved pilot limits |
 
 | 2026-11-17 | security | Phase 4B preparation: review and commit Phase 4A locally; preserve protected personal Hobby Preview and inert Production bootstrap; present exact mocked update for approval before any push/deploy; no live inference or paid services | User preparation and approval boundary |
 
+| 2026-11-17 | security | Phase 4B approved: publish only reviewed commits 53e5428/69e7d0c on the feature branch; add five Preview-only variables and deploy the exact permanent mock artifact to roomas-projects/interviewiq-api-preview; retain protection/bootstrap/quotas, no main/Production/live inference/paid changes | Explicit protected mocked deployment approval |
+
+| 2026-11-18 | security | Phase 5 prioritises verified OpenRouter free Gemma, alternatively verified Gemini Free tier; zero paid inference/cash/credit purchase, no paid or Ollama fallback; separate approval before deployment/inference; if no suitable free model, skip to mocked Phase 6 | User revised Phase 5 constraints |
+
+| 2026-11-18 | security | Phase 5 execution approved: OpenRouter google/gemma-4-31b-it:free only; one protected isolated Preview, three workflows, 12 total attempts including retries/concurrency, zero paid inference/cash; question first then evaluation; preserve mock Preview/bootstrap/quotas, stop after results | Explicit bounded free-model approval |
+
 | 2026-11-18 | security | Correct Phase 5 Redis URL equivalence locally; preserve exact HTTPS endpoint/authentication and budgets; full suite/audits/scans and configured PING preflight; commit on feat/streamlit-vercel-backend only; replacement Preview requires approval, no push/deploy/inference | User guard-correction scope |
 
+| 2026-11-18 | architecture | Use descriptive feature/workflow names for code, tests and documentation instead of numbered phase labels; retain historical deployment IDs and artifact provenance | User naming correction |
+
+| 2026-11-18 | security | Approved one protected free-model replacement from cef29b8 and feature-branch push only; exact Gemma free model, three workflows/12 attempts, zero spend; stop on free-route failure and leave the next verification step for separate approval | User replacement-execution approval |
+
+| 2026-11-18 | security | Prepare Community Cloud demonstration against the existing protected mocked Preview only; no live inference/provider changes, deployment, Production changes or paid services; require approval after the proposal | User Streamlit deployment preparation scope |
+
 | 2026-11-18 | security | Investigate and fix question progression locally on feat/streamlit-vercel-backend; preserve adaptation/security, commit separately, prepare one mocked replacement for approval; no push/deploy/main merge/live inference/paid services | User Phase 6A scope |
+
+| 2026-11-18 | security | Approved one exact a222d76 mocked Preview on roomas-projects; feature push only, 30 HTTP/15 admitted caps, no live inference or spend; user approved shared three-question prefix for five-question continuation; stop after bounded results, no Streamlit release | Explicit replacement approval and clarification |
+
+| 2026-11-18 | security | Mock replacement stopped at 28 data-plane attempts/14 admissions: one Redis lease remained after timeout probes; five-question UI incomplete after harness interruption; no further remote action or Streamlit release | Bounded verification stop and unresolved control gate |
 
 | 2026-11-18 | security | Investigate leases without assuming a defect; isolated local Redis lifecycle and full mocked workflow verification, smallest proven fix only; no scoring/model changes, push, deployment, main merge, paid resources or live providers; propose hosted checks for separate approval | User lease investigation and workflow verification scope |
 
@@ -193,9 +215,15 @@ PRD → Architecture → Features → Mockups
 
 | 2026-11-18 | security | Prepare Community Cloud frontend against verified dpl_3XLLkftWMZQx7U8bJwjXJG6NraRt/e247aba; private server secrets, demo-labelled UI/downloads, preserve quotas and leases; local tests/audits/scans and approval proposal only, no deploy/push/main/Production/live inference/paid infrastructure | User Community Cloud preparation scope |
 
+| 2026-11-19 | security | Community Cloud execution approved only for reviewed 17-file candidate; private access before secrets, 12 admissions/16 HTTP attempts maximum, one mocked five-question workflow, zero spend/live inference; preserve main and all Vercel resources, stop after verification | User deployment approval |
+
 | 2026-11-19 | security | Correct nested Streamlit imports locally, verify clean frontend-only startup without secrets and mocked workflows, commit separately on feature branch; no push/rebuild, credential installation, privacy changes, Vercel changes, live inference or paid services | User startup-correction scope |
 
 | 2026-11-19 | security | Correct score presentation and recap locally; inspect hosted browser read-only, report header/WebSocket gaps, run mocked regressions/audits/scans and propose frontend update only; no push/deploy/main/Vercel/secrets/live inference/paid services | User final UI verification scope |
+
+| 2026-11-19 | security | Publish exact reviewed nine-file summary correction on feature branch; preserve devcontainer/main/secrets/Vercel; mocked workflow and sanitised browser inspection only; stop on divergence or exposure | User private deployment verification scope |
+
+| 2026-11-19 | security | Explicitly approved one reboot of the existing private Streamlit app to load published 12db45a; preserve secrets, access settings and Vercel resources | User reboot approval |
 
 **Note:** MUST log any user correction or constraint in the table above.
 Categories: `architecture`, `security`, `UX`, `performance`

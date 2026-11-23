@@ -26,7 +26,7 @@ def block_external_network():
 @pytest.fixture(autouse=True)
 def mock_setup_http_boundary_for_existing_unit_tests(request, monkeypatch):
     """Setup unit tests now mock the HTTP boundary; their assertions are unchanged."""
-    from tests.phase2_legacy_support import LEGACY_UI_TESTS, configure_http_double
+    from tests.legacy_ui_http_support import LEGACY_UI_TESTS, configure_http_double
     if request.node.name in LEGACY_UI_TESTS:
         configure_http_double(request, monkeypatch)
         return
